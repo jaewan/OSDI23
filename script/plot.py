@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-path_prefix = "../data/deadlock_Performance_pipeline_"
+path_prefix = "../data/shuffle_"
 headers = ["std","var","working_set","object_store_size","object_size","time"]
-files = ["RAY","DFS","Constant_Wait","1","2"]
-legends = ["Production Ray","DFS","Constant_Wait","Deadlock #1","Deadlock #2"]
+files = ["RAY","DFS","DFS_Backpressure","DFS_BlockSpill","DFS_Backpressure_BlockSpill_Deadlock"]#,"1","2"]
+legends = ["Production Ray","DFS + [                   ] + [             ]","DFS + Backpressure + [             ]","DFS + [                   ] + BlockSpill","DFS + Backpressure + BlockSpill"]#,"Deadlock #1","Deadlock #2"]
 
 working_sets = [1,2,4,8]
 working_sets_len = len(working_sets)
@@ -25,6 +25,7 @@ error = []
 
 i = 0
 for file in files:
+    print(file)
     df = pd.read_csv(path_prefix+file+".csv")
     data.append(df['time'].values.tolist())
     std.append(df['std'].values.tolist())
@@ -59,6 +60,6 @@ for i in range(working_sets_len):
 plt.xlabel('Working Set Ratio', fontweight ='bold', fontsize = 15)
 plt.ylabel('Runtime', fontweight ='bold', fontsize = 15)
 plt.xticks([r + barWidth for r in range(working_sets_len)], working_sets)
-
 plt.legend()
-plt.savefig("pipeline.png")
+plt.title("Performance Breakdown with Shuffle", fontweight ='bold', fontsize = 18)
+plt.savefig("shuffle.png")
