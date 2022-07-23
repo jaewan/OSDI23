@@ -6,21 +6,9 @@ import time
 from time import perf_counter
 import os
 from termcolor import colored
+from common import *
 
-####################
-## Argument Parse ##
-####################
-parser = argparse.ArgumentParser()
-parser.add_argument('--WORKING_SET_RATIO', '-w', type=int, default=1)
-parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=4_000_000_000)
-parser.add_argument('--OBJECT_SIZE', '-os', type=int, default=100_000_000)
-parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
-parser.add_argument('--NUM_STAGES', '-ns', type=int, default=1)
-parser.add_argument('--NUM_TRIAL', '-t', type=int, default=1)
-parser.add_argument('--NUM_WORKER', '-nw', type=int, default=60)
-parser.add_argument('--LATENCY', '-l', type=float, default=1)
-args = parser.parse_args()
-params = vars(args)
+params = get_params()
 
 OBJECT_STORE_SIZE = params['OBJECT_STORE_SIZE'] 
 OBJECT_SIZE = params['OBJECT_SIZE'] 
@@ -31,25 +19,6 @@ NUM_TRIAL = params['NUM_TRIAL']
 NUM_WORKER = params['NUM_WORKER']
 LATENCY = params['LATENCY']
 OBJECT_STORE_BUFFER_SIZE = 50_000_000 #this value is to add some space in ObjS for nprand metadata and ray object metadata
-
-def warmup():
-    @ray.remote(num_cpus=1)
-    def producer(n):
-        return np.random.randint(2147483647, size=(OBJECT_STORE_SIZE//(8*n*2)))
-
-    @ray.remote(num_cpus=1)
-    def consumer(obj):
-        return True
-
-
-    res = []
-    n =2 
-    for i in range(n):
-        res.append(consumer.remote(producer.remote(n)))
-    ray.get(res)
-    del res
-    time.sleep(1)
-
 
 def ray_pipeline():
     @ray.remote(num_cpus=1)
@@ -73,6 +42,7 @@ def ray_pipeline():
             time.sleep(time_to_sleep)
         return ret_obj
         '''
+        time.sleep(LATENCY)
         return np.zeros(OBJECT_SIZE // 8)
         
     ray_pipeline_begin = perf_counter()
@@ -93,11 +63,12 @@ def ray_pipeline():
         #del r
 
     del refs[0]
-    ray.get(res)
+    del refs
+
+    ray.get(res[-1])
 
     ray_pipeline_end = perf_counter()
 
-    del refs
 
     return ray_pipeline_end - ray_pipeline_begin
 
@@ -145,17 +116,23 @@ def baseline_pipeline():
     baseline_end = perf_counter()
     return baseline_end - baseline_start
 
+run_test(ray_pipeline)
+'''
 
 ray_time = []
+num_spilled_objs = 0
 for i in range(NUM_TRIAL):
     ray.init(object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE , num_cpus = NUM_WORKER)
     warmup()
 
     ray_time.append(ray_pipeline())
-    print(ray_time)
+    s = get_num_spilled_objs()
+    num_spilled_objs += s
+
+    print(ray_time, s)
     ray.shutdown()
 
-data = [np.std(ray_time), np.var(ray_time), WORKING_SET_RATIO, OBJECT_STORE_SIZE, OBJECT_SIZE, sum(ray_time)/NUM_TRIAL]
+data = [np.std(ray_time), np.var(ray_time), WORKING_SET_RATIO, OBJECT_STORE_SIZE, OBJECT_SIZE, sum(ray_time)/NUM_TRIAL, num_spilled_objs/NUM_TRIAL]
 with open(RESULT_PATH, 'a', encoding='UTF-8', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(data)
@@ -163,3 +140,4 @@ with open(RESULT_PATH, 'a', encoding='UTF-8', newline='') as f:
 print(ray_time)
 #print(f"Ray Pipieline time: {sum(ray_time)/NUM_TRIAL}")
 print(colored(sum(ray_time)/NUM_TRIAL,'green'))
+'''

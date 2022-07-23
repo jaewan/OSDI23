@@ -8,6 +8,16 @@ from time import perf_counter
 from termcolor import colored
 from common import *
 
+'''
+O -> O
+  \
+O -> O
+  \
+O -> O
+  \
+O -> O
+'''
+
 params = get_params()
 OBJECT_STORE_SIZE = params['OBJECT_STORE_SIZE'] 
 OBJECT_SIZE = params['OBJECT_SIZE'] 
@@ -20,6 +30,7 @@ LATENCY = params['LATENCY']
 OBJECT_STORE_BUFFER_SIZE = 50_000_000 #this value is to add some space in ObjS for nprand metadata and ray object metadata
 
 def streaming():
+
     @ray.remote(num_cpus=1)
     def first_consumer(obj_ref):
         #time.sleep(LATENCY)
@@ -27,7 +38,7 @@ def streaming():
 
     @ray.remote(num_cpus=1)
     def consumer(obj_ref, obj_ref1):
-        return np.zeros(OBJECT_SIZE // 8)
+        return True
 
     @ray.remote(num_cpus=1) 
     def producer(): 
@@ -73,6 +84,8 @@ def streaming():
     return ray_pipeline_end - ray_pipeline_begin
 
 
+run_test(streaming)
+'''
 ray_time = []
 debugging = False
 
@@ -85,6 +98,7 @@ for i in range(NUM_TRIAL):
         warmup(OBJECT_STORE_SIZE)
 
     ray_time.append(streaming())
+    print(ray_time)
     os.system('ray memory --stats-only')
     ray.shutdown()
 
@@ -99,3 +113,4 @@ print(ray_time)
 print(colored(sum(ray_time)/NUM_TRIAL,'green'))
 
 #ray.timeline("timeline.json")
+'''

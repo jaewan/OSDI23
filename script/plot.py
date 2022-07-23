@@ -1,10 +1,14 @@
+#! /usr/bin/env python3
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-path_prefix = "../data/shuffle_"
-headers = ["std","var","working_set","object_store_size","object_size","time"]
+application = "streaming"
+
+path_prefix = "../data/" + application + "_"
+headers = ["std","var","working_set","object_store_size","object_size","time","num_spill_objs","spilled_size"]
 files = ["RAY","DFS","DFS_Backpressure","DFS_BlockSpill","DFS_Backpressure_BlockSpill_Deadlock"]#,"1","2"]
 legends = ["Production Ray","DFS + [                   ] + [             ]","DFS + Backpressure + [             ]","DFS + [                   ] + BlockSpill","DFS + Backpressure + BlockSpill"]#,"Deadlock #1","Deadlock #2"]
 
@@ -21,7 +25,7 @@ viridis = cm.get_cmap('viridis',num_of_bars)
 data = []
 std = []
 error = []
-
+num_spilled_objs = []
 
 i = 0
 for file in files:
@@ -29,6 +33,7 @@ for file in files:
     df = pd.read_csv(path_prefix+file+".csv")
     data.append(df['time'].values.tolist())
     std.append(df['std'].values.tolist())
+    num_spilled_objs.append(df['num_spill_objs'].values.tolist())
     d=[] 
     for j in range(working_sets_len):
         val = data[i][j]
@@ -53,13 +58,15 @@ pos = 0
 for i in range(working_sets_len):
     for j in range(num_of_bars):
         plt.vlines(pos, error[j][i]['min'], error[j][i]['max'], color='k')
+        plt.text(pos, data[j][i], num_spilled_objs[j][i], ha='center', va='bottom')
         pos += barWidth
     pos += barWidth
 
 # Adding Xticks
-plt.xlabel('Working Set Ratio', fontweight ='bold', fontsize = 15)
-plt.ylabel('Runtime', fontweight ='bold', fontsize = 15)
-plt.xticks([r + barWidth for r in range(working_sets_len)], working_sets)
-plt.legend()
-plt.title("Performance Breakdown with Shuffle", fontweight ='bold', fontsize = 18)
-plt.savefig("shuffle.png")
+plt.xlabel('Working Set Ratio', fontweight ='bold', fontsize = 35)
+plt.ylabel('Runtime', fontweight ='bold', fontsize = 35)
+plt.xticks([r + barWidth for r in range(working_sets_len)], working_sets, fontsize = 20)
+plt.yticks(fontsize = 20)
+plt.legend(loc='upper left', fontsize=20)
+#plt.title("Performance Breakdown with Streaming", fontweight ='bold', fontsize = 18)
+plt.savefig(application+".png")

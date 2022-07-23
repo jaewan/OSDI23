@@ -87,6 +87,8 @@ def shuffle():
     return shuffle_end - shuffle_start
 
 
+run_test(shuffle)
+'''
 ray_time = []
 debugging = False
 
@@ -113,3 +115,4 @@ print(ray_time)
 print(colored(sum(ray_time)/NUM_TRIAL,'green'))
 
 #ray.timeline("timeline.json")
+'''
