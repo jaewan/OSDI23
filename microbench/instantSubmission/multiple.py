@@ -17,6 +17,10 @@ LATENCY = params['LATENCY']
 TEST_OFFLINE = params['OFFLINE']
 OBJECT_STORE_BUFFER_SIZE = 50_000_000 #this value is to add some space in ObjS for nprand metadata and ray object metadata
 
+@ray.remote(num_cpus=1) 
+  def starter(): 
+    return True
+
 def pipeline():
     @ray.remote(num_cpus=1)
     def last_consumer(obj_ref):
@@ -28,7 +32,7 @@ def pipeline():
         return np.zeros(OBJECT_SIZE // 8)
 
     @ray.remote(num_cpus=1) 
-    def producer(): 
+    def producer(arg): 
         '''
         start_time = perf_counter()
         ret_obj = np.random.randint(2147483647, size=(OBJECT_SIZE // 8))
@@ -41,18 +45,15 @@ def pipeline():
         '''
         time.sleep(LATENCY)
         return np.zeros(OBJECT_SIZE // 8)
-
-    @ray.remote(num_cpus=1) 
-    def starter(): 
-        return True
         
     ray_pipeline_begin = perf_counter()
 
-    #a = starter.remote()
+    a = starter.remote()
     num_fill_object_store = (OBJECT_STORE_SIZE//OBJECT_SIZE)//NUM_STAGES
     refs = [[] for _ in range(NUM_STAGES)]
     for _ in range(WORKING_SET_RATIO*num_fill_object_store):
-        refs[0].append(producer.remote())
+        refs[0].append(producer.remote(a))
+    del a
 
     for stage in range(1, NUM_STAGES):
         for i in range(WORKING_SET_RATIO*num_fill_object_store):
@@ -74,53 +75,85 @@ def pipeline():
 
     return ray_pipeline_end - ray_pipeline_begin
 
-def offline_pipeline():
-    @ray.remote(num_cpus=1)
-    def last_consumer(obj_ref):
+def shuffle():
+    @ray.remote
+    def map(arg, npartitions):
+        size = OBJECT_SIZE//8
+        data = np.random.rand(size)
+        size = size//npartitions
         time.sleep(LATENCY)
+        return tuple(data[(i*size):((i+1)*size)] for i in range(npartitions))
+
+    @ray.remote
+    def reduce(*partitions):
+        #time.sleep(1)
+        return True
+
+    shuffle_start = perf_counter()
+
+    a = starter.remote()
+    npartitions = (OBJECT_STORE_SIZE*WORKING_SET_RATIO)//OBJECT_SIZE 
+    refs = [map.options(num_returns=npartitions).remote(a, npartitions)
+            for _ in range(npartitions)]
+    del a
+
+    results = []
+    for j in range(npartitions):
+        results.append(reduce.remote(*[ref[j] for ref in refs]))
+    del refs
+    ray.get(results)
+    del results
+
+    shuffle_end = perf_counter()
+    return shuffle_end - shuffle_start
+
+def streaming():
+
+    @ray.remote(num_cpus=1)
+    def first_consumer(obj_ref):
+        #time.sleep(LATENCY)
         return True
 
     @ray.remote(num_cpus=1)
-    def consumer(obj_ref):
+    def consumer(obj_ref, obj_ref1):
+        return True
+
+    @ray.remote(num_cpus=1) 
+    def producer(arg): 
         return np.zeros(OBJECT_SIZE // 8)
+        
+    ray_pipeline_begin = perf_counter()
 
-    @ray.remote(num_cpus=1)
-    def producer():
-        start_time = perf_counter()
-        ret_obj = ray.put(np.random.randint(2147483647, size=(OBJECT_SIZE // 8)))
-        end_time = perf_counter()
-        time_to_sleep = LATENCY - (end_time - start_time)
-        if time_to_sleep > 0:
-            time.sleep(time_to_sleep)
-        return ret_obj
-
-    baseline_start = perf_counter()
-
+    a = starter.remote()
     num_fill_object_store = (OBJECT_STORE_SIZE//OBJECT_SIZE)//NUM_STAGES
-    for i in range(WORKING_SET_RATIO):
-        refs = [[] for _ in range(NUM_STAGES+1)]
-        for _ in range(num_fill_object_store):
-            refs[0].append(producer.remote())
+    n = WORKING_SET_RATIO*num_fill_object_store
 
-        for stage in range(1, NUM_STAGES):
-            for r in refs[stage-1]:
-                refs[stage].append(consumer.remote(r))
-                #del r
+    refs = [[] for _ in range(NUM_STAGES)]
+    for _ in range(n):
+        refs[0].append(producer.remote(a))
+    del a
 
-        res = []
-        for r in refs[NUM_STAGES-1]:
-            res.append(last_consumer.remote(r))
-            #del r
+    for stage in range(1, NUM_STAGES):
+        for i in range(n):
+            refs[stage].append(consumer.remote(refs[stage-1][i]))
+        del refs[stage-1]
 
-        del refs[0]
-        ray.get(res)
+    res = []
+    res.append(first_consumer.remote(refs[NUM_STAGES-1][0]))
+    for i in range(1, n):
+        res.append(consumer.remote(refs[NUM_STAGES-1][i-1], refs[NUM_STAGES-1][i-1]))
+        #del r
 
-    baseline_end = perf_counter()
-    return baseline_end - baseline_start
+    del refs[0]
+    ray.get(res[-1])
 
-####################### Test ####################### 
+    ray_pipeline_end = perf_counter()
+
+    del refs
+
+    return ray_pipeline_end - ray_pipeline_begin
 if __name__ == '__main__':
-    if TEST_OFFLINE:
-        run_test(offline_pipeline)
-    else:
-        run_test(pipeline)
+    pipeline()
+    shuffle()
+    streaming()
+    print("done!")

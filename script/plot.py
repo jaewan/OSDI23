@@ -1,16 +1,20 @@
 #! /usr/bin/env python3
 
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-application = "streaming"
+application = "pipeline"
+if len(sys.argv) > 1:
+    application = sys.argv[1]
 
 path_prefix = "../data/" + application + "_"
 headers = ["std","var","working_set","object_store_size","object_size","time","num_spill_objs","spilled_size"]
-files = ["RAY","DFS","DFS_Backpressure","DFS_BlockSpill","DFS_Backpressure_BlockSpill_Deadlock"]#,"1","2"]
-legends = ["Production Ray","DFS + [                   ] + [             ]","DFS + Backpressure + [             ]","DFS + [                   ] + BlockSpill","DFS + Backpressure + BlockSpill"]#,"Deadlock #1","Deadlock #2"]
+files = ["RAY","DFS","DFS_Backpressure","DFS_BlockSpill","DFS_Backpressure_BlockSpill_Deadlock", "EAGERSPILL"]#,"1","2"]
+legends = ["Production Ray","DFS + [                   ] + [             ]","DFS + Backpressure + [             ]",
+        "DFS + [                   ] + BlockSpill","DFS + Backpressure + BlockSpill", "EagerSpill"]#,"Deadlock #1","Deadlock #2"]
 
 working_sets = [1,2,4,8]
 working_sets_len = len(working_sets)

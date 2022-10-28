@@ -22,6 +22,7 @@ def get_params():
     parser.add_argument('--NUM_WORKER', '-nw', type=int, default=60)
     parser.add_argument('--SEED', '-s', type=int, default=0)
     parser.add_argument('--LATENCY', '-l', type=float, default=0)
+    parser.add_argument('--OFFLINE', '-off', type=bool, default=False)
     args = parser.parse_args()
     params = vars(args)
 

@@ -3,41 +3,41 @@
 DEBUG=true
 
 ################ System Variables ################ 
-APPLICATION=shuffle
-LOG_DIR=../data/$APPLICATION\_
-TEST_FILE=../microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=4000000000
-OBJECT_SIZE=100000000
+APPLICATION=sort
+LOG_DIR=../data/push_based_shuffle\_
+TEST_FILE=../macrobench/$APPLICATION.py
+NUM_PARTITIONS=10
+PARITION_SIZE=1e7
 
 ################ Test Techniques ################ 
 Production_RAY=false
-OFFLINE=false
 DFS=true
 DFS_EVICT=false
 DFS_BACKPRESSURE=false
 DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
 DFS_BACKPRESSURE_BLOCKSPILL=false
-EAGERSPILL=false
+EAGER_SPILL=true
 
 function Test()
 {
 	BACKPRESSURE=$1
 	BLOCKSPILL=$2
 	EVICT=$3
-	OFF=$4
+	EAGERSPILL=$4
 	RESULT_FILE=$LOG_DIR$5.csv
 	if $DEBUG;
 	then
 		#for w in {1,2,4,8}
 		#do
-		w=4
+		w=3
 			let a=20000
 			echo $5 -w $w 
 			RAY_BACKEND_LOG_LEVEL=debug \
 			RAY_block_tasks_threshold=1.0 RAY_object_spilling_threshold=1.0 RAY_spill_wait_time=$a RAY_enable_Deadlock2=true \
 			RAY_enable_BlockTasks=$BACKPRESSURE  RAY_enable_EvictTasks=$EVICT RAY_enable_BlockTasksSpill=$BLOCKSPILL RAY_enable_EagerSpill=$EAGERSPILL\
-			python $TEST_FILE -w $w -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t 10 -nw 40
+			RAY_DATASET_PUSH_BASED_SHUFFLE=1 \
+			python $TEST_FILE --num-partitions=$NUM_PARTITIONS --partition-size=$PARITION_SIZE
 		#done
 	else
 		test -f "$RESULT_FILE" && rm $RESULT_FILE
@@ -48,7 +48,8 @@ function Test()
 			echo $5 -w $w 
 			RAY_block_tasks_threshold=1.0 RAY_object_spilling_threshold=1.0 RAY_spill_wait_time=$a RAY_enable_Deadlock2=true \
 			RAY_enable_BlockTasks=$BACKPRESSURE  RAY_enable_EvictTasks=$EVICT RAY_enable_BlockTasksSpill=$BLOCKSPILL RAY_enable_EagerSpill=$EAGERSPILL\
-			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE  -off $OFF -t 5 -nw 60 
+			RAY_DATASET_PUSH_BASED_SHUFFLE=1 \
+			python $TEST_FILE --num-partitions=$NUM_PARTITIONS --partition-size=$PARITION_SIZE
 		done
 		rm -rf /tmp/ray/*
 	fi
@@ -64,10 +65,6 @@ then
 	Test false false false false DFS
 fi
 
-if $OFFLINE;
-then
-	Test false false false true OFFLINE
-fi
 
 if $DFS_EVICT;
 then
@@ -94,9 +91,9 @@ then
  	Test true true false false DFS_Backpressure_BlockSpill_Deadlock
 fi
 
-if $EAGERSPILL;
+if $EAGER_SPILL;
 then
- 	Test false false false false EagerSpill
+ 	Test false false false true EagerSpill
 fi
 
 ################ Plot Graph ################ 

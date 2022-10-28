@@ -41,14 +41,9 @@ def pipeline():
         '''
         time.sleep(LATENCY)
         return np.zeros(OBJECT_SIZE // 8)
-
-    @ray.remote(num_cpus=1) 
-    def starter(): 
-        return True
         
     ray_pipeline_begin = perf_counter()
 
-    #a = starter.remote()
     num_fill_object_store = (OBJECT_STORE_SIZE//OBJECT_SIZE)//NUM_STAGES
     refs = [[] for _ in range(NUM_STAGES)]
     for _ in range(WORKING_SET_RATIO*num_fill_object_store):
@@ -84,8 +79,8 @@ def offline_pipeline():
     def consumer(obj_ref):
         return np.zeros(OBJECT_SIZE // 8)
 
-    @ray.remote(num_cpus=1)
-    def producer():
+    @ray.remote(num_cpus=1) 
+    def producer(): 
         start_time = perf_counter()
         ret_obj = ray.put(np.random.randint(2147483647, size=(OBJECT_SIZE // 8)))
         end_time = perf_counter()
@@ -93,7 +88,7 @@ def offline_pipeline():
         if time_to_sleep > 0:
             time.sleep(time_to_sleep)
         return ret_obj
-
+        
     baseline_start = perf_counter()
 
     num_fill_object_store = (OBJECT_STORE_SIZE//OBJECT_SIZE)//NUM_STAGES
@@ -118,9 +113,15 @@ def offline_pipeline():
     baseline_end = perf_counter()
     return baseline_end - baseline_start
 
+@ray.remote(num_cpus=1)
+def run_pipeline():
+    return pipeline()
+
 ####################### Test ####################### 
 if __name__ == '__main__':
-    if TEST_OFFLINE:
-        run_test(offline_pipeline)
-    else:
-        run_test(pipeline)
+    print("*****************")
+    ret = run_pipeline.remote()
+    print("*****************")
+    print(ray.get(ret))
+    print("*****************")
+

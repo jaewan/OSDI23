@@ -1,11 +1,7 @@
 import ray
-import csv
-import argparse
 import numpy as np
 import time
-import os
 from time import perf_counter
-from termcolor import colored
 from common import *
 
 '''
@@ -83,34 +79,52 @@ def streaming():
 
     return ray_pipeline_end - ray_pipeline_begin
 
+def offline_streaming():
 
-run_test(streaming)
-'''
-ray_time = []
-debugging = False
+    @ray.remote(num_cpus=1)
+    def first_consumer(obj_ref):
+        return True
 
-if 'dummy' in RESULT_PATH:
-    debugging = True
+    @ray.remote(num_cpus=1)
+    def consumer(obj_ref, obj_ref1):
+        return True
 
-for i in range(NUM_TRIAL):
-    ray.init(object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE , num_cpus = NUM_WORKER)
-    if not debugging:
-        warmup(OBJECT_STORE_SIZE)
+    @ray.remote(num_cpus=1) 
+    def producer(): 
+        return np.zeros(OBJECT_SIZE // 8)
+        
+    ray_pipeline_begin = perf_counter()
 
-    ray_time.append(streaming())
-    print(ray_time)
-    os.system('ray memory --stats-only')
-    ray.shutdown()
+    num_fill_object_store = (OBJECT_STORE_SIZE//OBJECT_SIZE)//NUM_STAGES
+    n = WORKING_SET_RATIO*num_fill_object_store
 
-#header = ['std', 'var', 'working_set_ratio', 'object_store_size','object_size','time']
-if not debugging:
-    data = [np.std(ray_time), np.var(ray_time), WORKING_SET_RATIO, OBJECT_STORE_SIZE, OBJECT_SIZE, sum(ray_time)/NUM_TRIAL]
-    with open(RESULT_PATH, 'a', encoding='UTF-8', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
+    refs = [[] for _ in range(NUM_STAGES)]
+    for _ in range(n):
+        refs[0].append(producer.remote())
 
-print(ray_time)
-print(colored(sum(ray_time)/NUM_TRIAL,'green'))
+    for stage in range(1, NUM_STAGES):
+        for i in range(n):
+            refs[stage].append(consumer.remote(refs[stage-1][i]))
+        del refs[stage-1]
 
-#ray.timeline("timeline.json")
-'''
+    res = []
+    res.append(first_consumer.remote(refs[NUM_STAGES-1][0]))
+    for i in range(1, n):
+        res.append(consumer.remote(refs[NUM_STAGES-1][i-1], refs[NUM_STAGES-1][i-1]))
+        #del r
+
+    del refs[0]
+    ray.get(res[-1])
+
+    ray_pipeline_end = perf_counter()
+
+    del refs
+
+    return ray_pipeline_end - ray_pipeline_begin
+
+
+####################### Test ####################### 
+if TEST_OFFLINE:
+    run_test(offline_pipeline)
+else:
+    run_test(pipeline)
