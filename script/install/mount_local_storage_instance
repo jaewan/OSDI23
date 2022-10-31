@@ -1,4 +1,0 @@
-sudo mkdir /ray
-sudo mkfs.ext4 /dev/nvme1n1
-sudo mount -t ext4 /dev/nvme1n1 /ray
-echo "/dev/nvme1n1 /ray auto noatime 0 0" | sudo tee -a /etc/fstab

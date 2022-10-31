@@ -77,7 +77,10 @@ def run_test(benchmark):
         debugging = True
 
     for i in range(NUM_TRIAL):
-        ray.init(object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE , num_cpus = NUM_WORKER)
+        ray.init(_system_config={
+        "object_spilling_config": json.dumps(
+            {"type": "filesystem", "params": {"directory_path": $RAY_SPILL_DIR}},
+            object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE , num_cpus = NUM_WORKER)
         if not debugging:
             warmup(OBJECT_STORE_SIZE)
 

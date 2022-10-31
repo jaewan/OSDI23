@@ -7,11 +7,13 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 \
               --slave /usr/bin/gcov gcov /usr/bin/gcov-9
 
 #Python setup
+echo "Install Python"
 sudo apt install python-is-python3
 sudo apt install python3-pip
 python -m pip install --upgrade pip wheel
 
 #Nodejs
+echo "Install Nodejs"
 wget https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh
 chmod +x install.sh
 ./install.sh
@@ -21,7 +23,8 @@ nvm install 14
 nvm use 14
 
 #install bazel
-wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-installer-darwin-arm64.sh
-chmod +x bazel-5.3.2-installer-darwin-arm64.sh
-rm bazel-5.3.2-installer-darwin-arm64.sh
-./bazel-5.3.2-installer-darwin-arm64.sh --user
+echo "Install Bazel"
+wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-installer-linux-x86_64.sh
+chmod +x bazel-5.3.2-installer-linux-x86_64.sh
+./bazel-5.3.2-installer-linux-x86_64.sh --user
+export PATH="$PATH:$HOME/bin"
