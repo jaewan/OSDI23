@@ -1,32 +1,69 @@
-#! /bin/bash
+#! /bin/bash 
 
-APP_SCHEDULING=false
-PRODUCTION=true
+################ Application Config ################ 
+DEBUG_MODE=true
+APP_SCHEDULING=true
+PRODUCTION=false
+DFS=true
 EAGERSPILL=false
+
 ################ System Variables ################ 
-NUM_PARTITION=320
+PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
+BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
+NUM_PARTITION=32
+
+function SetUp()
+{
+        BOA=$1
+
+        if $APP_SCHEDULING;
+        then
+                CODE_PATH=code/application_scheduling/push_based_shuffle.py
+        else
+                CODE_PATH=code/application_scheduling_off/push_based_shuffle.py
+        fi
+
+        if $BOA;
+        then
+                cp $CODE_PATH $BOA_DIR/data/_internal/
+                echo 'Setup push_based_shuffle to Boa python files'
+        else
+                cp code/client_mode_hook.py $PRODUCTION_DIR/_private/
+                cp $CODE_PATH $PRODUCTION_DIR/data/_internal/
+                echo 'Setup push_based_shuffle to Production Ray python files'
+        fi
+
+}
+
+function Run()
+{
+        eagerspill=$1
+        if $DEBUG_MODE;
+        then
+                DEBUG=debug
+        fi
+
+        for i in {1..2}
+        do
+                RAY_DATASET_PUSH_BASED_SHUFFLE=1 RAY_BACKEND_LOG_LEVEL=$DEBUG RAY_enable_EagerSpill=$eagerspill \
+                python sort.py --num-partitions=$NUM_PARTITION --partition-size=1e7
+        done
+}
 
 if $PRODUCTION;
 then
-	cp code/client_mode_hook.py /home/ubuntu/.local/lib/python3.8/site-packages/ray/_private/
-	if $APP_SCHEDULING;
-	then
-		cp code/application_scheduling/push_based_shuffle.py /home/ubuntu/.local/lib/python3.8/site-packages/ray/data/_internal/
-	else
-		cp code/application_scheduling_off/push_based_shuffle.py /home/ubuntu/.local/lib/python3.8/site-packages/ray/data/_internal/
-		echo 'Copied app-level scheudling off push_based_shuffle'
-	fi
+        SetUp false
+        Run false
+fi
 
-	for i in {1..1}
-		do
-		RAY_DATASET_PUSH_BASED_SHUFFLE=1 python sort.py --num-partitions=$NUM_PARTITION --partition-size=1e7
-		done
+if $DFS;
+then
+        SetUp true
+        Run false
 fi
 
 if $EAGERSPILL;
 then
-	for i in {1..3}
-	do
-	RAY_BACKEND_LOG_LEVEL=debug RAY_DATASET_PUSH_BASED_SHUFFLE=1 RAY_enable_EagerSpill=true python sort.py --num-partitions=$NUM_PARTITION --partition-size=1e7
-done
+        SetUp true
+        Run true
 fi
