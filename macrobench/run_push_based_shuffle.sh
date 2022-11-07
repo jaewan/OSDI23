@@ -10,7 +10,7 @@ EAGERSPILL=false
 ################ System Variables ################ 
 PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
 BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
-NUM_PARTITION=32
+NUM_PARTITION=320
 
 function SetUp()
 {
