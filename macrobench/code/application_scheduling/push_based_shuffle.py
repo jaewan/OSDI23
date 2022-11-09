@@ -170,6 +170,7 @@ class _PipelinedStageExecutor:
             except StopIteration:
                 break
         self._rounds.append(task_round)
+        #print(f"submitted a round. #rounds:{len(self._rounds)} num tasks:{self._num_tasks_per_round}")
 
 
 class _MapStageIterator:
@@ -421,6 +422,7 @@ class PushBasedShufflePlan(ShuffleOp):
             num_returns=1 + stage.num_merge_tasks_per_round,
         )
 
+        #print("Total rounds:", stage.num_rounds)
         map_stage_iter = _MapStageIterator(
             input_blocks_list,
             shuffle_map,
@@ -448,12 +450,14 @@ class PushBasedShufflePlan(ShuffleOp):
         map_stage_metadata = []
         merge_stage_metadata = []
         while not (map_done and merge_done):
+            #print("Map iter")
             try:
                 map_stage_metadata += next(map_stage_executor)
             except StopIteration:
                 map_done = True
                 break
 
+            #print("Merge iter")
             try:
                 merge_stage_metadata += next(merge_stage_executor)
             except StopIteration:

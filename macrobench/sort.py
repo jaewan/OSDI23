@@ -96,6 +96,13 @@ if __name__ == "__main__":
         ctx = DatasetContext.get_current()
         ctx.use_polars = True
 
+    spill_dir = os.getenv('RAY_SPILL_DIR')
+    if spill_dir:
+        ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
+                                    "params": {"directory_path": spill_dir}},)}, num_cpus=8)
+    else:
+        ray.init(num_cpus=4)
+
     num_partitions = int(args.num_partitions)
     partition_size = int(float(args.partition_size))
     print(

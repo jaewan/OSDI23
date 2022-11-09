@@ -10,7 +10,7 @@ EAGERSPILL=false
 ################ System Variables ################ 
 PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
 BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
-NUM_PARTITION=320
+NUM_PARTITION=6
 
 function SetUp()
 {
@@ -38,12 +38,15 @@ function SetUp()
 function Run()
 {
 	eagerspill=$1
+	NUM_TRIAL=10
+	DEBUG=info
 	if $DEBUG_MODE;
 	then
 		DEBUG=debug
+		NUM_TRIAL=1
 	fi
 
-	for i in {1..2}
+	for i in {1..$NUM_TRIAL}
 	do
 		RAY_DATASET_PUSH_BASED_SHUFFLE=1 RAY_BACKEND_LOG_LEVEL=$DEBUG RAY_enable_EagerSpill=$eagerspill \
 		python sort.py --num-partitions=$NUM_PARTITION --partition-size=1e7
@@ -53,17 +56,20 @@ function Run()
 if $PRODUCTION;
 then
 	SetUp false
+	echo "Running [Production Ray] with Application-level Scheduling: $APP_SCHEDULING"
 	Run false
 fi
 
 if $DFS;
 then
 	SetUp true
+	echo "Running [BOA-DFS Ray] with Application-level Scheduling: $APP_SCHEDULING"
 	Run false
 fi
 
 if $EAGERSPILL;
 then
 	SetUp true
+	echo "Running [BOA-DFS-EagerSpill Ray] with Application-level Scheduling: $APP_SCHEDULING"
 	Run true
 fi

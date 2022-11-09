@@ -158,6 +158,7 @@ class _PipelinedStageExecutor:
                     )
                 else:
                     prev_metadata = ray.get(prev_metadata_refs)
+                #print(f"Executed {self._function_name}")
 
         self._submit_round()
 
@@ -173,6 +174,7 @@ class _PipelinedStageExecutor:
                 except StopIteration:
                     break
             self._rounds.append(task_round)
+        #print(f"{self._function_name} submitted {len(self._rounds)} rounds")
 
 
 class _MapStageIterator:
@@ -453,14 +455,17 @@ class PushBasedShufflePlan(ShuffleOp):
         map_stage_metadata = []
         merge_stage_metadata = []
         while not (map_done and merge_done):
+            #print("Map and merge iterator")
             try:
                 map_stage_metadata += next(map_stage_executor)
+                #print("Called map next()")
             except StopIteration:
                 map_done = True
                 break
 
             try:
                 merge_stage_metadata += next(merge_stage_executor)
+                #print("Called merge next()")
             except StopIteration:
                 merge_done = True
                 break
