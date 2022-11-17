@@ -11,6 +11,12 @@ echo "Install Python"
 sudo apt install python-is-python3
 sudo apt install python3-pip
 python -m pip install --upgrade pip wheel
+pip install termcolor
+pip install psutil
+pip install pyarrow
+pip install pandas
+pip install tqdm
+pip install matplotlib
 
 #Nodejs
 echo "Install Nodejs"
