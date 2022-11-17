@@ -2,54 +2,71 @@
 
 ################ Application Config ################ 
 DEBUG_MODE=true
-APP_SCHEDULING=true
+APP_SCHEDULING=2
 PRODUCTION=false
 DFS=true
 EAGERSPILL=false
+DFS_BACKPRESSURE_BLOCKSPILL=false
 
 ################ System Variables ################ 
-PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
+PRODUCTION_DIR=/home/ubuntu/production_ray/python/ray/
+#PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
 BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
-NUM_PARTITION=6
+LOG_DIR=../data/push_based_shuffle/
+NUM_PARTITION=32
 
 function SetUp()
 {
 	BOA=$1
 
-	if $APP_SCHEDULING;
-	then
-		CODE_PATH=code/application_scheduling/push_based_shuffle.py
-	else
-		CODE_PATH=code/application_scheduling_off/push_based_shuffle.py
-	fi
+	case $APP_SCHEDULING in
+		# App-level scheduling
+		0)
+			CODE_PATH=code/application_scheduling/push_based_shuffle.py
+			;;
+		# App-level scheduling off ver1
+		1)
+			CODE_PATH=code/application_scheduling_off_ver1/push_based_shuffle.py
+			;;
+		# App-level scheduling off ver2
+		2)
+			CODE_PATH=code/application_scheduling_off_ver2/push_based_shuffle.py
+			;;
+	esac
 
 	if $BOA;
 	then
 		cp $CODE_PATH $BOA_DIR/data/_internal/
 		echo 'Setup push_based_shuffle to Boa python files'
 	else
-		cp code/client_mode_hook.py $PRODUCTION_DIR/_private/
 		cp $CODE_PATH $PRODUCTION_DIR/data/_internal/
 		echo 'Setup push_based_shuffle to Production Ray python files'
 	fi
-
 }
 
 function Run()
 {
-	eagerspill=$1
+	RESULT_PATH=$LOG_DIR$1$APP_SCHEDULING.csv
+	eagerspill=$2
+	BACKPRESSURE=$3
+
 	NUM_TRIAL=10
 	DEBUG=info
 	if $DEBUG_MODE;
 	then
+		rm /tmp/ray/*log
 		DEBUG=debug
 		NUM_TRIAL=1
+	else
+		test -f "$RESULT_PATH" && rm $RESULT_PATH
+		echo "runtime,spilled_amount,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput" >> $RESULT_PATH
 	fi
 
-	for i in {1..$NUM_TRIAL}
+	for (( i=0; i<$NUM_TRIAL; i++))
 	do
 		RAY_DATASET_PUSH_BASED_SHUFFLE=1 RAY_BACKEND_LOG_LEVEL=$DEBUG RAY_enable_EagerSpill=$eagerspill \
-		python sort.py --num-partitions=$NUM_PARTITION --partition-size=1e7
+		RAY_enable_BlockTasks=$BACKPRESSURE \
+		python sort.py --num-partitions=$NUM_PARTITION --partition-size=1e7 -r $RESULT_PATH 
 	done
 }
 
@@ -57,19 +74,26 @@ if $PRODUCTION;
 then
 	SetUp false
 	echo "Running [Production Ray] with Application-level Scheduling: $APP_SCHEDULING"
-	Run false
+	Run RAY false false
 fi
 
 if $DFS;
 then
 	SetUp true
 	echo "Running [BOA-DFS Ray] with Application-level Scheduling: $APP_SCHEDULING"
-	Run false
+	Run DFS false false
+fi
+
+if $DFS_BACKPRESSURE_BLOCKSPILL;
+then
+	SetUp true
+	echo "Running [BOA-DFS-Backpressure Ray] with Application-level Scheduling: $APP_SCHEDULING"
+	Run DFS_Backpressure false true
 fi
 
 if $EAGERSPILL;
 then
 	SetUp true
 	echo "Running [BOA-DFS-EagerSpill Ray] with Application-level Scheduling: $APP_SCHEDULING"
-	Run true
+	Run DFS_Backpressure_EagerSpill true true
 fi

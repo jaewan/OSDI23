@@ -135,6 +135,8 @@ class _PipelinedStageExecutor:
         self._rounds: List[List[ObjectRef]] = []
         self._task_idx = 0
 
+        self._num_rounds_submitted = 0
+
         self._submit_round()
 
     def __iter__(self):
@@ -166,7 +168,7 @@ class _PipelinedStageExecutor:
 
     def _submit_round(self):
         assert len(self._rounds) < self._max_concurrent_rounds
-        while len(self._rounds) < self._max_concurrent_rounds:
+        while self._num_rounds_submitted < self._max_concurrent_rounds:
             task_round = []
             for _ in range(self._num_tasks_per_round):
                 try:
@@ -174,7 +176,7 @@ class _PipelinedStageExecutor:
                 except StopIteration:
                     break
             self._rounds.append(task_round)
-        #print(f"{self._function_name} submitted {len(self._rounds)} rounds")
+            self._num_rounds_submitted += 1
 
 
 class _MapStageIterator:
