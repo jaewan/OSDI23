@@ -151,23 +151,21 @@ class _PipelinedStageExecutor:
         if all(len(r) == 0 for r in self._rounds):
             raise StopIteration
 
-        if len(self._rounds) >= self._max_concurrent_rounds:
-            prev_metadata_refs = self._rounds.pop(0)
-            if prev_metadata_refs:
-                if self._progress_bar is not None:
-                    prev_metadata = self._progress_bar.fetch_until_complete(
-                        prev_metadata_refs
-                    )
-                else:
-                    prev_metadata = ray.get(prev_metadata_refs)
-                #print(f"Executed {self._function_name}")
+        prev_metadata_refs = self._rounds.pop(0)
+        if prev_metadata_refs:
+            if self._progress_bar is not None:
+                prev_metadata = self._progress_bar.fetch_until_complete(
+                    prev_metadata_refs
+                )
+            else:
+                prev_metadata = ray.get(prev_metadata_refs)
 
-        self._submit_round()
 
         return prev_metadata
 
     def _submit_round(self):
         assert len(self._rounds) < self._max_concurrent_rounds
+        #print(f"Submit {self._function_name}")
         while self._num_rounds_submitted < self._max_concurrent_rounds:
             task_round = []
             for _ in range(self._num_tasks_per_round):
@@ -179,14 +177,17 @@ class _PipelinedStageExecutor:
             self._num_rounds_submitted += 1
 
 
+
 class _MapStageIterator:
-    def __init__(self, input_blocks_list, shuffle_map, map_args):
+    def __init__(self, input_blocks_list, shuffle_map, map_args, num_rounds,num_map_tasks_per_round):
         self._input_blocks_list = input_blocks_list
         self._shuffle_map = shuffle_map
         self._map_args = map_args
 
+        self._num_rounds = num_rounds
+        self._num_map_tasks_per_round = num_map_tasks_per_round
         self._mapper_idx = 0
-        self._map_results = []
+        self._map_results = [ [] for _ in range(num_rounds) ]
 
     def __iter__(self):
         return self
@@ -207,13 +208,14 @@ class _MapStageIterator:
             *self._map_args,
         )
         metadata_ref = map_result.pop(-1)
-        self._map_results.append(map_result)
+        round_idx = self._mapper_idx // self._num_map_tasks_per_round
+        self._map_results[round_idx].append(map_result)
         self._mapper_idx += 1
         return metadata_ref
 
-    def pop_map_results(self) -> List[List[ObjectRef]]:
-        map_results = self._map_results
-        self._map_results = []
+    def pop_map_results(self, round_idx) -> List[List[ObjectRef]]:
+        map_results = self._map_results[round_idx]
+        self._map_results[round_idx] = []
         return map_results
 
 
@@ -230,6 +232,7 @@ class _MergeStageIterator:
         self._stage = stage
         self._reduce_args = reduce_args
 
+        self._round_idx = 0
         self._merge_idx = 0
         self._map_result_buffer = None
         # Final outputs from the map-merge stage.
@@ -243,7 +246,7 @@ class _MergeStageIterator:
     def __next__(self):
         if not self._map_result_buffer or not self._map_result_buffer[0]:
             assert self._merge_idx == 0
-            self._map_result_buffer = self._map_stage_iter.pop_map_results()
+            self._map_result_buffer = self._map_stage_iter.pop_map_results(self._round_idx)
 
         if not self._map_result_buffer:
             raise StopIteration
@@ -266,6 +269,8 @@ class _MergeStageIterator:
 
         self._merge_idx += 1
         self._merge_idx %= self._stage.num_merge_tasks_per_round
+        if self._merge_idx == 0:
+            self._round_idx += 1
         return metadata_ref
 
     def pop_merge_results(self) -> List[List[ObjectRef]]:
@@ -432,6 +437,8 @@ class PushBasedShufflePlan(ShuffleOp):
             input_blocks_list,
             shuffle_map,
             [output_num_blocks, stage.merge_schedule, *self._map_args],
+            stage.num_rounds,
+            stage.num_map_tasks_per_round,
         )
         map_bar = ProgressBar("Shuffle Map", position=0, total=len(input_blocks_list))
         map_stage_executor = _PipelinedStageExecutor(
@@ -452,25 +459,6 @@ class PushBasedShufflePlan(ShuffleOp):
         # tasks and N merge tasks each. Task execution between map and merge is
         # pipelined, so that while executing merge for one round of inputs, we
         # also execute the map tasks for the following round.
-        map_done = False
-        merge_done = False
-        map_stage_metadata = []
-        merge_stage_metadata = []
-        while not (map_done and merge_done):
-            #print("Map and merge iterator")
-            try:
-                map_stage_metadata += next(map_stage_executor)
-                #print("Called map next()")
-            except StopIteration:
-                map_done = True
-                break
-
-            try:
-                merge_stage_metadata += next(merge_stage_executor)
-                #print("Called merge next()")
-            except StopIteration:
-                merge_done = True
-                break
 
         map_bar.close()
         all_merge_results = merge_stage_iter.pop_merge_results()
@@ -522,6 +510,26 @@ class PushBasedShufflePlan(ShuffleOp):
             len(new_blocks) == output_num_blocks
         ), f"Expected {output_num_blocks} outputs, produced {len(new_blocks)}"
         reduce_bar.close()
+
+        map_done = False
+        merge_done = False
+        map_stage_metadata = []
+        merge_stage_metadata = []
+        while not (map_done and merge_done):
+            #print("Map and merge iterator")
+            try:
+                map_stage_metadata += next(map_stage_executor)
+                #print("Called map next()")
+            except StopIteration:
+                map_done = True
+                break
+
+            try:
+                merge_stage_metadata += next(merge_stage_executor)
+                #print("Called merge next()")
+            except StopIteration:
+                merge_done = True
+                break
 
         stats = {
             "map": map_stage_metadata,

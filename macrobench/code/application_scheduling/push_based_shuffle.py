@@ -124,11 +124,13 @@ class _PipelinedStageExecutor:
         num_tasks_per_round: int,
         max_concurrent_rounds: int = 1,
         progress_bar: Optional[ProgressBar] = None,
+        function_name: Optional[str]="",
     ):
         self._stage_iter = stage_iter
         self._num_tasks_per_round = num_tasks_per_round
         self._max_concurrent_rounds = max_concurrent_rounds
         self._progress_bar = progress_bar
+        self._function_name = function_name
 
         self._rounds: List[List[ObjectRef]] = []
         self._task_idx = 0
@@ -164,13 +166,17 @@ class _PipelinedStageExecutor:
     def _submit_round(self):
         assert len(self._rounds) < self._max_concurrent_rounds
         task_round = []
+        tasks = 0
         for _ in range(self._num_tasks_per_round):
             try:
+                tasks += 1
                 task_round.append(next(self._stage_iter))
             except StopIteration:
+                tasks -= 1
+                print(f"\t\t Submitting a {self._function_name} task went wrong")
                 break
         self._rounds.append(task_round)
-        #print(f"submitted a round. #rounds:{len(self._rounds)} num tasks:{self._num_tasks_per_round}")
+        print(f"Submitted {self._function_name} {tasks} tasks")
 
 
 class _MapStageIterator:
@@ -430,7 +436,7 @@ class PushBasedShufflePlan(ShuffleOp):
         )
         map_bar = ProgressBar("Shuffle Map", position=0, total=len(input_blocks_list))
         map_stage_executor = _PipelinedStageExecutor(
-            map_stage_iter, stage.num_map_tasks_per_round, progress_bar=map_bar
+            map_stage_iter, stage.num_map_tasks_per_round, progress_bar=map_bar, function_name="Map"
         )
 
         shuffle_merge = cached_remote_fn(merge)
@@ -438,7 +444,7 @@ class PushBasedShufflePlan(ShuffleOp):
             map_stage_iter, shuffle_merge, stage, self._reduce_args
         )
         merge_stage_executor = _PipelinedStageExecutor(
-            merge_stage_iter, stage.num_merge_tasks_per_round, max_concurrent_rounds=2
+            merge_stage_iter, stage.num_merge_tasks_per_round, max_concurrent_rounds=2, function_name="Merge"
         )
 
         # Execute the map-merge stage. This submits tasks in rounds of M map
@@ -491,7 +497,7 @@ class PushBasedShufflePlan(ShuffleOp):
             reduce_stage_iter,
             max_reduce_tasks_in_flight,
             max_concurrent_rounds=2,
-            progress_bar=reduce_bar,
+            progress_bar=reduce_bar, function_name="Merge",
         )
         reduce_stage_metadata = []
         while True:
