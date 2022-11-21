@@ -1,11 +1,11 @@
 #! /bin/bash 
 
 ################ Application Config ################ 
-DEBUG_MODE=true
+DEBUG_MODE=false
 APP_SCHEDULING=0
 PRODUCTION=false
-DFS=true
-EAGERSPILL=false
+DFS=false
+EAGERSPILL=true
 DFS_BACKPRESSURE_BLOCKSPILL=false
 
 ################ System Variables ################ 
@@ -13,8 +13,8 @@ PRODUCTION_DIR=/home/ubuntu/production_ray/python/ray/
 #PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
 BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
 LOG_DIR=../data/push_based_shuffle_large/
-NUM_PARTITION=320
-PARTITION_SIZE=1e7
+NUM_PARTITION=$1
+PARTITION_SIZE=$2
 
 function SetUp()
 {
@@ -51,7 +51,7 @@ function Run()
 	eagerspill=$2
 	BACKPRESSURE=$3
 
-	NUM_TRIAL=5
+	NUM_TRIAL=10
 	DEBUG=info
 	if $DEBUG_MODE;
 	then
@@ -97,5 +97,5 @@ if $EAGERSPILL;
 then
 	SetUp true
 	echo "Running [BOA-DFS-EagerSpill Ray] with Application-level Scheduling: $APP_SCHEDULING"
-	Run DFS_Backpressure_EagerSpill true true
+	Run DFS_EagerSpill true false
 fi

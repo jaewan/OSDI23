@@ -1,4 +1,5 @@
 import logging
+from time import perf_counter
 import math
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
@@ -132,6 +133,9 @@ class _PipelinedStageExecutor:
         self._progress_bar = progress_bar
         self._function_name = function_name
 
+        self._next_time = 0
+        self._submit_time = 0
+
         self._rounds: List[List[ObjectRef]] = []
         self._task_idx = 0
 
@@ -149,6 +153,7 @@ class _PipelinedStageExecutor:
         if all(len(r) == 0 for r in self._rounds):
             raise StopIteration
 
+        start_time = perf_counter()
         if len(self._rounds) >= self._max_concurrent_rounds:
             prev_metadata_refs = self._rounds.pop(0)
             if prev_metadata_refs:
@@ -158,6 +163,8 @@ class _PipelinedStageExecutor:
                     )
                 else:
                     prev_metadata = ray.get(prev_metadata_refs)
+        end_time = perf_counter()
+        self._next_time += (end_time - start_time)
 
         self._submit_round()
 
@@ -167,16 +174,17 @@ class _PipelinedStageExecutor:
         assert len(self._rounds) < self._max_concurrent_rounds
         task_round = []
         tasks = 0
+        start_time = perf_counter()
         for _ in range(self._num_tasks_per_round):
             try:
                 tasks += 1
                 task_round.append(next(self._stage_iter))
             except StopIteration:
                 tasks -= 1
-                print(f"\t\t Submitting a {self._function_name} task went wrong")
                 break
         self._rounds.append(task_round)
-        print(f"Submitted {self._function_name} {tasks} tasks")
+        end_time = perf_counter()
+        self._submit_time += (end_time - start_time)
 
 
 class _MapStageIterator:
@@ -455,6 +463,7 @@ class PushBasedShufflePlan(ShuffleOp):
         merge_done = False
         map_stage_metadata = []
         merge_stage_metadata = []
+        start_time = perf_counter()
         while not (map_done and merge_done):
             #print("Map iter")
             try:
@@ -469,6 +478,10 @@ class PushBasedShufflePlan(ShuffleOp):
             except StopIteration:
                 merge_done = True
                 break
+        end_time = perf_counter()
+        print("map merge ends ", end_time - start_time)
+        print(f"map next time {map_stage_executor._next_time} submit time: {map_stage_executor._submit_time} ")
+        print(f"merge next time {merge_stage_executor._next_time} submit time: {merge_stage_executor._submit_time} ")
 
         map_bar.close()
         all_merge_results = merge_stage_iter.pop_merge_results()
@@ -500,11 +513,14 @@ class PushBasedShufflePlan(ShuffleOp):
             progress_bar=reduce_bar, function_name="Merge",
         )
         reduce_stage_metadata = []
+        start_time = perf_counter()
         while True:
             try:
                 reduce_stage_metadata += next(reduce_stage_executor)
             except StopIteration:
                 break
+        end_time = perf_counter()
+        print("Reduce ends ", end_time - start_time)
 
         new_blocks = reduce_stage_iter.pop_reduce_results()
         sorted_blocks = [

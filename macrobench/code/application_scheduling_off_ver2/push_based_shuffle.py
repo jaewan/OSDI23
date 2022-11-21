@@ -158,7 +158,6 @@ class _PipelinedStageExecutor:
                     )
                 else:
                     prev_metadata = ray.get(prev_metadata_refs)
-                print(f"Executed {self._function_name}, rounds:{len(self._rounds)} max:{self._max_concurrent_rounds}")
 
         self._submit_round()
 
@@ -173,7 +172,6 @@ class _PipelinedStageExecutor:
             except StopIteration:
                 break
         self._rounds.append(task_round)
-        print(f"Submitted {self._function_name}, rounds:{len(self._rounds)} ")
 
 
 class _MapStageIterator:

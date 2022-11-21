@@ -1,4 +1,5 @@
 import json
+import csv
 import os
 import resource
 import time
@@ -70,6 +71,44 @@ class RandomIntRowDatasource(Datasource[ArrowRow]):
 
         return read_tasks
 
+def store_results(memory_stats, res_str, result_path):
+    if 'dummy' in result_path:
+        return
+
+    # Get Spilled, Restored amount
+    words = memory_stats.split()
+    spilled_amount = ""
+    spilled_objects = ""
+    write_throughput = ""
+    if "Spilled" in words:
+        idx = words.index("Spilled")
+        spilled_amount = words[idx+1]
+        spilled_objects = words[idx+3]
+        write_throughput = words[idx+8]
+
+    restored_amount = ""
+    restored_objects = ""
+    read_throughput = ""
+    if "Restored" in words:
+        idx = words.index("Restored")
+        restored_amount = words[idx+1]
+        restored_objects = words[idx+3]
+        read_throughput = words[idx+8]
+
+
+    # Get Execution Time
+    words = res_str[res_str.index("executed")+1:].split()
+    idx = words.index("executed")
+    runtime = words[idx+2]
+    data = [runtime[:-1], spilled_amount, spilled_objects, write_throughput, restored_amount, restored_objects, read_throughput]
+
+
+    # Write the results as a csv file. The format is defined in run script
+    with open(result_path, 'a', encoding='UTF-8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
+
+
 
 if __name__ == "__main__":
     import argparse
@@ -88,6 +127,7 @@ if __name__ == "__main__":
         "--shuffle", help="shuffle instead of sort", action="store_true"
     )
     parser.add_argument("--use-polars", action="store_true")
+    parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
 
     args = parser.parse_args()
 
@@ -96,6 +136,7 @@ if __name__ == "__main__":
         ctx = DatasetContext.get_current()
         ctx.use_polars = True
 
+    result_path = args.RESULT_PATH
     spill_dir = os.getenv('RAY_SPILL_DIR')
     if spill_dir:
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
@@ -142,8 +183,10 @@ if __name__ == "__main__":
     rss = int(process.memory_info().rss)
     print(f"rss: {rss / 1e9}/GB")
 
+    memory_stats = ""
     try:
-        print(memory_summary(stats_only=True))
+        memory_stats = memory_summary(stats_only=True)
+        print(memory_stats)
     except Exception:
         print("Failed to retrieve memory summary")
         print(traceback.format_exc())
@@ -151,6 +194,7 @@ if __name__ == "__main__":
 
 
     print(ds.stats())
+    store_results(memory_stats, ds.stats(), result_path)
 
     if "TEST_OUTPUT_JSON" in os.environ:
         out_file = open(os.environ["TEST_OUTPUT_JSON"], "w")
