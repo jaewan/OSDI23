@@ -142,7 +142,7 @@ if __name__ == "__main__":
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
                                     "params": {"directory_path": spill_dir}},)}, num_cpus=8)
     else:
-        ray.init(num_cpus=4)
+        ray.init(num_cpus=8, object_store_memory=4_000_000_000)
 
     num_partitions = int(args.num_partitions)
     partition_size = int(float(args.partition_size))
