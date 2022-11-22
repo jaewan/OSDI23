@@ -34,3 +34,18 @@ wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-ins
 chmod +x bazel-5.3.2-installer-linux-x86_64.sh
 ./bazel-5.3.2-installer-linux-x86_64.sh --user
 export PATH="$PATH:$HOME/bin"
+
+# Get Boa
+pushd  ~/
+git clone https://github.com/jaewan/ray_memory_management.git
+cd ray_memory_management
+git checkout eager-spill
+popd
+
+
+# Get production Ray 2.2.0
+pushd  ~/
+git clone https://github.com/ray-project/ray.git
+cd ray
+git checkout releases/2.2.0
+popd
