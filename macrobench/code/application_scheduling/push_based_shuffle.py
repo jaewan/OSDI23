@@ -510,7 +510,7 @@ class PushBasedShufflePlan(ShuffleOp):
             reduce_stage_iter,
             max_reduce_tasks_in_flight,
             max_concurrent_rounds=2,
-            progress_bar=reduce_bar, function_name="Merge",
+            progress_bar=reduce_bar, function_name="Reduce",
         )
         reduce_stage_metadata = []
         start_time = perf_counter()

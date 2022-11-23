@@ -149,19 +149,31 @@ class _PipelinedStageExecutor:
         if all(len(r) == 0 for r in self._rounds):
             raise StopIteration
 
-        if len(self._rounds) >= self._max_concurrent_rounds:
-            prev_metadata_refs = self._rounds.pop(0)
-            if prev_metadata_refs:
-                if self._progress_bar is not None:
-                    prev_metadata = self._progress_bar.fetch_until_complete(
-                        prev_metadata_refs
-                    )
-                else:
-                    prev_metadata = ray.get(prev_metadata_refs)
+        prev_metadata_refs = self._rounds.pop(0)
+        if prev_metadata_refs:
+            if self._progress_bar is not None:
+                prev_metadata = self._progress_bar.fetch_until_complete(
+                    prev_metadata_refs
+                )
+            else:
+                prev_metadata = ray.get(prev_metadata_refs)
 
-        self._submit_round()
 
         return prev_metadata
+
+    def get_results(self):
+        prev_metadata = []
+        if all(len(r) == 0 for r in self._rounds):
+            raise StopIteration
+
+        prev_metadata_refs = self._rounds.pop(0)
+        if prev_metadata_refs:
+            if self._progress_bar is not None:
+                prev_metadata = self._progress_bar.fetch_until_complete(
+                    prev_metadata_refs
+                )
+            else:
+                prev_metadata = ray.get(prev_metadata_refs)
 
     def _submit_round(self):
         assert len(self._rounds) < self._max_concurrent_rounds
@@ -172,6 +184,8 @@ class _PipelinedStageExecutor:
             except StopIteration:
                 break
         self._rounds.append(task_round)
+        if len(self._rounds) == self._max_concurrent_rounds:
+            raise StopIteration
 
 
 class _MapStageIterator:
@@ -452,22 +466,18 @@ class PushBasedShufflePlan(ShuffleOp):
         map_stage_metadata = []
         merge_stage_metadata = []
         while not (map_done and merge_done):
-            #print("Map and merge iterator")
             try:
-                map_stage_metadata += next(map_stage_executor)
-                #print("Called map next()")
+                map_stage_executor._submit_round()
             except StopIteration:
                 map_done = True
                 break
 
             try:
-                merge_stage_metadata += next(merge_stage_executor)
-                #print("Called merge next()")
+                merge_stage_executor._submit_round()
             except StopIteration:
                 merge_done = True
                 break
 
-        map_bar.close()
         all_merge_results = merge_stage_iter.pop_merge_results()
 
         # Execute and wait for the reduce stage.
@@ -497,12 +507,35 @@ class PushBasedShufflePlan(ShuffleOp):
             progress_bar=reduce_bar, 
             function_name="Reduce",
         )
+        while True:
+            try:
+                reduce_stage_executor._submit_round()
+            except StopIteration:
+                break
+
+        # Get Results
         reduce_stage_metadata = []
         while True:
             try:
                 reduce_stage_metadata += next(reduce_stage_executor)
             except StopIteration:
                 break
+
+        map_done = False
+        merge_done = False
+        while not (map_done and merge_done):
+            try:
+                map_stage_metadata += next(map_stage_executor)
+            except StopIteration:
+                map_done = True
+                break
+
+            try:
+                merge_stage_metadata += next(merge_stage_executor)
+            except StopIteration:
+                merge_done = True
+                break
+        map_bar.close()
 
         new_blocks = reduce_stage_iter.pop_reduce_results()
         sorted_blocks = [
