@@ -455,12 +455,6 @@ class PushBasedShufflePlan(ShuffleOp):
             max_concurrent_rounds = stage.num_rounds, function_name="Merge"
         )
 
-        # Execute the map-merge stage. This submits tasks in rounds of M map
-        # tasks and N merge tasks each. Task execution between map and merge is
-        # pipelined, so that while executing merge for one round of inputs, we
-        # also execute the map tasks for the following round.
-
-        map_bar.close()
         all_merge_results = merge_stage_iter.pop_merge_results()
 
         # Execute and wait for the reduce stage.
@@ -530,6 +524,7 @@ class PushBasedShufflePlan(ShuffleOp):
             except StopIteration:
                 merge_done = True
                 break
+        map_bar.close()
 
         stats = {
             "map": map_stage_metadata,

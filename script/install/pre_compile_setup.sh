@@ -17,6 +17,13 @@ pip install pyarrow
 pip install pandas
 pip install tqdm
 pip install matplotlib
+#Ray Serve
+pip install fastapi
+pip install uvicorn
+pip install transformers
+pip install torch torchvision
+pip install aiorwlock
+pip install sentencepiece
 
 #Nodejs
 echo "Install Nodejs"
