@@ -49,10 +49,10 @@ cd ray_memory_management
 git checkout eager-spill
 popd
 
-
 # Get production Ray 2.2.0
 pushd  ~/
 git clone https://github.com/ray-project/ray.git
-cd ray
+mv ray production_ray
+cd production_ray
 git checkout releases/2.2.0
 popd
