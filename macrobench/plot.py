@@ -48,7 +48,7 @@ while i < num_of_bars:
     i += 1
 
 # Adding Xticks
-plt.xlabel('Schemes Applied', fontsize = 35)
+plt.xlabel('Application Schemes', fontsize = 35)
 plt.ylabel('Runtime',  fontsize = 35)
 #xlabel = ['','','']
 plt.xticks([barWidth/2, barWidth*3 + barWidth/2, barWidth*5 + barWidth/2,barWidth*7 + barWidth/2], ["No Execution Order", "No Backpressure", "App Scheduled",
@@ -60,3 +60,4 @@ plt.legend((bars[0], bars[1], bars[3], bars[5]),("Ray", "DFS + [                
           fancybox=True, framealpha=0.5, shadow=False, fontsize=15)
 plt.title("Push Based Shuffle with each schemes", fontsize = 35)
 plt.savefig("push_based_shuffle.png")
+print("push_based_shuffle.png Generated!")
