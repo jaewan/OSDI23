@@ -9,7 +9,7 @@ from matplotlib import cm
 
 application = "Push based shuffle"
 
-path_prefix = "../data/push_based_shuffle_large/"
+path_prefix = "../data/push_based_shuffle/"
 headers = ["runtime" ,"spilled_amount", "spilled_objects", "write_throughput", "restored_amount", "restored_objects", "read_throughput"]
 
 files = ["RAY1", "DFS1", "RAY2", "DFS_Backpressure2", "RAY0", "DFS_Backpressure_EagerSpill1"]
