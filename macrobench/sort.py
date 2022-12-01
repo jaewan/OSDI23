@@ -17,7 +17,6 @@ from ray.data.block import Block, BlockMetadata
 from ray.data.context import DatasetContext
 from ray.data.datasource import Datasource, ReadTask
 
-
 class RandomIntRowDatasource(Datasource[ArrowRow]):
     """An example datasource that generates rows with random int64 columns.
 
@@ -102,10 +101,13 @@ def store_results(memory_stats, res_str, result_path):
     runtime = words[idx+2]
     data = [runtime[:-1], spilled_amount, spilled_objects, write_throughput, restored_amount, restored_objects, read_throughput]
 
-
     # Write the results as a csv file. The format is defined in run script
     with open(result_path, 'a', encoding='UTF-8', newline='') as f:
         writer = csv.writer(f)
+        if 'config' in result_path:
+            d = [OBJECT_STORE_SIZE, NUM_WORKERS, num_partitions, partition_size, data[0]]
+            writer.writerow(d)
+            return
         writer.writerow(data)
 
 
@@ -128,8 +130,17 @@ if __name__ == "__main__":
     )
     parser.add_argument("--use-polars", action="store_true")
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
+    parser.add_argument('--NUM_WORKER', '-nw', type=int, default=16)
+    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=4_000_000_000)
 
     args = parser.parse_args()
+
+    global NUM_WORKERS 
+    global OBJECT_STORE_SIZE 
+    global num_partitions
+    global partition_size
+    NUM_WORKERS = args.NUM_WORKER 
+    OBJECT_STORE_SIZE = args.OBJECT_STORE_SIZE
 
     if args.use_polars and not args.shuffle:
         print("Using polars for sort")
@@ -140,9 +151,11 @@ if __name__ == "__main__":
     spill_dir = os.getenv('RAY_SPILL_DIR')
     if spill_dir:
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
-                                    "params": {"directory_path": spill_dir}},)}, num_cpus=8)
+                                    "params": {"directory_path": spill_dir}},)}, num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
+        print("Ray spill dir set")
     else:
-        ray.init(num_cpus=8, object_store_memory=4_000_000_000)
+        ray.init(num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
+        print("Ray default init")
 
     num_partitions = int(args.num_partitions)
     partition_size = int(float(args.partition_size))
