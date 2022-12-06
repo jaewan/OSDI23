@@ -1,4 +1,5 @@
 import torch
+import ray
 
 MODELS = ['Resnet18', 'Resnet50', 'Resnet101', 'BEiT', 'ConvNeXT', 'ViT384', 'Resnet18']
 
@@ -21,6 +22,7 @@ class ImgModel:
     def print_name(self):
         print(self.model_name)
 
+@ray.remote
 class Resnet18(ImgModel):
     def __init__(self):
         from transformers import AutoFeatureExtractor, ResNetForImageClassification
@@ -40,6 +42,7 @@ class Resnet18(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
+@ray.remote
 class Resnet50(ImgModel):
     def __init__(self):
         from transformers import AutoFeatureExtractor, ResNetForImageClassification
@@ -62,6 +65,7 @@ class Resnet50(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
+@ray.remote
 class Resnet101(ImgModel):
     def __init__(self):
         from transformers import AutoFeatureExtractor, ResNetForImageClassification
@@ -85,6 +89,7 @@ class Resnet101(ImgModel):
         return self.model.config.id2label[predicted_label]
 
 
+@ray.remote
 class BEiT(ImgModel):
     def __init__(self):
         from transformers import BeitFeatureExtractor, BeitForImageClassification
@@ -106,6 +111,7 @@ class BEiT(ImgModel):
         predicted_class_idx = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_class_idx]
 
+@ray.remote
 class ConvNeXT(ImgModel):
     def __init__(self):
         from transformers import ConvNextFeatureExtractor, ConvNextForImageClassification
@@ -129,6 +135,7 @@ class ConvNeXT(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
+@ray.remote
 class ViT384(ImgModel):
     def __init__(self):
         from transformers import ViTFeatureExtractor, ViTForImageClassification
@@ -172,6 +179,7 @@ class MIT-B0(ImgModel):
 
     def eval(self, img):
 
+@ray.remote
 class (ImgModel):
     def __init__(self):
 
@@ -179,6 +187,7 @@ class (ImgModel):
 
     def eval(self, img):
 
+@ray.remote
 class (ImgModel):
     def __init__(self):
 
@@ -186,6 +195,7 @@ class (ImgModel):
 
     def eval(self, img):
 
+@ray.remote
 class (ImgModel):
     def __init__(self):
 
@@ -193,6 +203,7 @@ class (ImgModel):
 
     def eval(self, img):
 
+@ray.remote
 class (ImgModel):
     def __init__(self):
 
