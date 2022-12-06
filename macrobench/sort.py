@@ -131,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--use-polars", action="store_true")
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
     parser.add_argument('--NUM_WORKER', '-nw', type=int, default=16)
-    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=4_000_000_000)
+    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=9_000_000_000)
 
     args = parser.parse_args()
 
@@ -151,10 +151,11 @@ if __name__ == "__main__":
     spill_dir = os.getenv('RAY_SPILL_DIR')
     if spill_dir:
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
-                                    "params": {"directory_path": spill_dir}},)}, num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
+                                    "params": {"directory_path": spill_dir}},)})#, num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
         print("Ray spill dir set")
     else:
-        ray.init(num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
+        #ray.init(num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
+        ray.init()
         print("Ray default init")
 
     num_partitions = int(args.num_partitions)

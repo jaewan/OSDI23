@@ -24,6 +24,13 @@ pip install transformers
 pip install torch torchvision
 pip install aiorwlock
 pip install sentencepiece
+pip install datasets
+pip install --upgrade requests
+pip install opencensus
+pip install prometheus_client
+pip install gpustat
+pip install aiohttp_cors
+pip install datasets[vision]
 
 #Nodejs
 echo "Install Nodejs"

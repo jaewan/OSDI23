@@ -1,21 +1,17 @@
 #! /bin/bash 
 
 ################ Application Config ################ 
-DEBUG_MODE=false
 APP_SCHEDULING=0
-PRODUCTION=false
-DFS=true
-EAGERSPILL=false
+PRODUCTION=true
+DFS=false
 DFS_BACKPRESSURE_BLOCKSPILL=false
+EAGERSPILL=false
 
 ################ System Variables ################ 
 PRODUCTION_DIR=/home/ubuntu/production_ray/python/ray/
 #PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
 BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
-LOG_DIR=../data/$3/
-NUM_PARTITION=$1
-PARTITION_SIZE=$2
-TRIALS=$4
+LOG_DIR=../data/config/
 
 function SetUp()
 {
@@ -52,25 +48,32 @@ function Run()
 	eagerspill=$2
 	BACKPRESSURE=$3
 
-	NUM_TRIAL=$TRIALS
-	DEBUG=info
-	if $DEBUG_MODE;
-	then
-		rm /tmp/ray/*log
-		DEBUG=debug
-		NUM_TRIAL=1
-		RESULT_PATH="../data/dummy.csv"
-	else
-		#test -f "$RESULT_PATH" && rm $RESULT_PATH
-		echo "runtime,spilled_amount,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput" >> $RESULT_PATH
-		echo "Append mode"
-	fi
+	NUM_TRIAL=3
 
-	for (( i=0; i<$NUM_TRIAL; i++))
+	#test -f "$RESULT_PATH" && rm $RESULT_PATH
+	#echo "object_store_size,num_workers,num_partitions,partition_size,runtime" >> $RESULT_PATH
+
+	for oss in {1000000000,4000000000,9000000000}
+	#for oss in 500000000
 	do
-		RAY_DATASET_PUSH_BASED_SHUFFLE=1 RAY_BACKEND_LOG_LEVEL=$DEBUG RAY_enable_EagerSpill=$eagerspill \
-		RAY_enable_BlockTasks=$BACKPRESSURE \
-		python sort.py --num-partitions=$NUM_PARTITION --partition-size=$PARTITION_SIZE -r $RESULT_PATH 
+		for nw in {8,16}
+		#for nw in 16
+		do
+			for np in {320,512}
+			do
+				for ps in {1e7,5e7,1e8}
+				do
+					for (( i=0; i<$NUM_TRIAL; i++))
+					do
+						RAY_DATASET_PUSH_BASED_SHUFFLE=1 RAY_enable_EagerSpill=$eagerspill \
+						RAY_enable_BlockTasks=$BACKPRESSURE RAY_enable_BlockTasksSpill=$eagerspill \
+						python sort.py --num-partitions=$np --partition-size=$ps --NUM_WORKER=$nw --OBJECT_STORE_SIZE=$oss -r $RESULT_PATH 
+						rm /tmp/ray/*log
+						rm -rf /tmp/ray/session*
+					done
+				done
+			done
+		done
 	done
 }
 
@@ -99,5 +102,5 @@ if $EAGERSPILL;
 then
 	SetUp true
 	echo "Running [BOA-DFS-EagerSpill Ray] with Application-level Scheduling: $APP_SCHEDULING"
-	Run DFS_Backpressure_EagerSpill true true
+	Run DFS_Backpressure_EagerSpill true true 
 fi

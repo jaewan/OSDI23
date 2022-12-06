@@ -12,7 +12,7 @@ DFS_BACKPRESSURE_BLOCKSPILL=true
 PRODUCTION_DIR=/home/ubuntu/production_ray/python/ray/
 #PRODUCTION_DIR=/home/ubuntu/.local/lib/python3.8/site-packages/ray
 BOA_DIR=/home/ubuntu/ray_memory_management/python/ray
-LOG_DIR=../data/push_based_shuffle_large/
+LOG_DIR=../data/9g/
 NUM_PARTITION=$1
 PARTITION_SIZE=$2
 
@@ -51,7 +51,7 @@ function Run()
 	eagerspill=$2
 	BACKPRESSURE=$3
 
-	NUM_TRIAL=10
+	NUM_TRIAL=1
 	DEBUG=info
 	if $DEBUG_MODE;
 	then
@@ -60,8 +60,9 @@ function Run()
 		NUM_TRIAL=1
 		RESULT_PATH="../data/dummy.csv"
 	else
-		test -f "$RESULT_PATH" && rm $RESULT_PATH
-		echo "runtime,spilled_amount,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput" >> $RESULT_PATH
+		#test -f "$RESULT_PATH" && rm $RESULT_PATH
+		#echo "runtime,spilled_amount,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput" >> $RESULT_PATH
+		echo "Append mode"
 	fi
 
 	for (( i=0; i<$NUM_TRIAL; i++))

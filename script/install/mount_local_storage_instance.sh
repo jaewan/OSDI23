@@ -1,6 +1,7 @@
 # Mountint local storage instance
 RAY_SPILL_DIR="/ray_spill"
 sudo mkdir $RAY_SPILL_DIR
+sudo umount $RAY_SPILL_DIR
 sudo mkfs.ext4 /dev/nvme1n1
 sudo mount -t ext4 /dev/nvme1n1 $RAY_SPILL_DIR
 
