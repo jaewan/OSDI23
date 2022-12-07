@@ -8,15 +8,15 @@ class ImgModel:
         self.model = model
         self.model_name = model_name
 
-    def eval(self, img):
+    def predict(self, img):
         try:
-            self._eval(img)
+            self._predict(img)
         except NotImplementedError:
             raise
         except Exception:
-            print('Exception Occured at eval() ', self.model_name)
+            print('Exception Occured at predict() ', self.model_name)
 
-    def _eval(self, img):
+    def _predict(self, img):
         raise NotImplementedError
 
     def print_name(self):
@@ -31,7 +31,7 @@ class Resnet18(ImgModel):
 
         ImgModel.__init__(self, 'Resnet18', ResNetForImageClassification.from_pretrained("microsoft/resnet-18"))
 
-    def eval(self, img):
+    def predict(self, img):
 
         inputs = self.feature_extractor(img, return_tensors="pt")
 
@@ -51,12 +51,10 @@ class Resnet50(ImgModel):
 
         ImgModel.__init__(self, 'Resnet50', ResNetForImageClassification.from_pretrained("microsoft/resnet-50"))
 
-    def eval(self, img):
+    def predict(self, img):
         from datasets import load_dataset
 
-        dataset = load_dataset("huggingface/cats-image")
-        image = dataset["test"]["image"][0]
-        inputs = self.feature_extractor(image, return_tensors="pt")
+        inputs = self.feature_extractor(img, return_tensors="pt")
 
         with torch.no_grad():
             logits = self.model(**inputs).logits
@@ -74,12 +72,10 @@ class Resnet101(ImgModel):
 
         ImgModel.__init__(self, 'Resnet101', ResNetForImageClassification.from_pretrained("microsoft/resnet-101"))
 
-    def eval(self, img):
+    def predict(self, img):
         from datasets import load_dataset
 
-        dataset = load_dataset("huggingface/cats-image")
-        image = dataset["test"]["image"][0]
-        inputs = self.feature_extractor(image, return_tensors="pt")
+        inputs = self.feature_extractor(img, return_tensors="pt")
 
         with torch.no_grad():
             logits = self.model(**inputs).logits
@@ -98,13 +94,9 @@ class BEiT(ImgModel):
 
         ImgModel.__init__(self, 'BEiT', model)
 
-    def eval(self, img):
-        from PIL import Image
-        import requests
+    def predict(self, img):
 
-        url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
-        image = Image.open(requests.get(url, stream=True).raw)
-        inputs = self.feature_extractor(images=image, return_tensors="pt")
+        inputs = self.feature_extractor(images=img, return_tensors="pt")
         outputs = self.model(**inputs)
         logits = outputs.logits
         # model predicts one of the 21,841 ImageNet-22k classes
@@ -121,12 +113,10 @@ class ConvNeXT(ImgModel):
 
         ImgModel.__init__(self, 'ConvNeXT', model)
 
-    def eval(self, img):
+    def predict(self, img):
         from datasets import load_dataset
 
-        dataset = load_dataset("huggingface/cats-image")
-        image = dataset["test"]["image"][0]
-        inputs = self.feature_extractor(image, return_tensors="pt")
+        inputs = self.feature_extractor(img, return_tensors="pt")
 
         with torch.no_grad():
             logits = self.model(**inputs).logits
@@ -143,12 +133,8 @@ class ViT384(ImgModel):
         model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-384')
         ImgModel.__init__(self, 'ViT384', model)
 
-    def eval(self, img):
-        from PIL import Image
-        import requests
-        url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
-        image = Image.open(requests.get(url, stream=True).raw)
-        inputs = self.feature_extractor(images=image, return_tensors="pt")
+    def predict(self, img):
+        inputs = self.feature_extractor(images=img, return_tensors="pt")
         outputs = self.model(**inputs)
         logits = outputs.logits
         # model predicts one of the 1000 ImageNet classes
@@ -177,7 +163,7 @@ class MIT-B0(ImgModel):
 
         ImgModel.__init__(self, '', )
 
-    def eval(self, img):
+    def predict(self, img):
 
 @ray.remote
 class (ImgModel):
@@ -185,7 +171,7 @@ class (ImgModel):
 
         ImgModel.__init__(self, '', )
 
-    def eval(self, img):
+    def predict(self, img):
 
 @ray.remote
 class (ImgModel):
@@ -193,7 +179,7 @@ class (ImgModel):
 
         ImgModel.__init__(self, '', )
 
-    def eval(self, img):
+    def predict(self, img):
 
 @ray.remote
 class (ImgModel):
@@ -201,7 +187,7 @@ class (ImgModel):
 
         ImgModel.__init__(self, '', )
 
-    def eval(self, img):
+    def predict(self, img):
 
 @ray.remote
 class (ImgModel):
@@ -209,6 +195,6 @@ class (ImgModel):
 
         ImgModel.__init__(self, '', )
 
-    def eval(self, img):
+    def predict(self, img):
 
 '''
