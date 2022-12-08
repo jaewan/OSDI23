@@ -1,0 +1,2 @@
+#RAY_ENSEMBLE_SERVE=true RAY_BACKEND_LOG_LEVEL=debug python ensemble_serving.py
+RAY_ENSEMBLE_SERVE=true python ensemble_serving.py
