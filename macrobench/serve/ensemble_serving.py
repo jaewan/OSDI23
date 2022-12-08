@@ -11,11 +11,11 @@ def get_params():
     global params
     parser = argparse.ArgumentParser()
     parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=1)
-    parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=100)
+    parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=1)
     parser.add_argument('--BATCH_INTERVAL', '-bi', type=int, default=1)
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
     parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=1_000_000_000)
-    parser.add_argument('--MAX_MODEL_RUN', '-m', type=int, default=10)
+    parser.add_argument('--MAX_MODEL_RUN', '-m', type=int, default=0)
     args = parser.parse_args()
     params = vars(args) 
 
@@ -23,14 +23,17 @@ def get_params():
 def get_image():
     from PIL import Image
     idx = random.randint(0, 3)
+    '''
     if idx == 0:
-        image = Image.open(r'/home/ubuntu/OSDI23/macrobench/serve/data/korean-flag.jpg')
+        image = Image.open(r'data/korean-flag.jpg')
     elif idx == 1:
-        image = Image.open(r'/home/ubuntu/OSDI23/macrobench/serve/data/Double-Cat-Wallpaper.jpg')
+        image = Image.open(r'data/Double-Cat-Wallpaper.jpg')
     elif idx == 2:
-        image = Image.open(r'/home/ubuntu/OSDI23/macrobench/serve/data/qVnC9UJ.jpg')
+        image = Image.open(r'data/qVnC9UJ.jpg')
     elif idx == 3:
         image = dataset["test"]["image"][0]
+    '''
+    image = Image.open(r'data/104801ab.jpg')
     return image
 
 @ray.remote
@@ -102,7 +105,7 @@ def aggregator(img, seq):
             return num_models_run
 
     vote = 0
-    while vote < ((num_models_run//2) + 1) or num_models_run > params['MAX_MODEL_RUN']:
+    while vote < ((num_models_run//2) + 1) and num_models_run <= params['MAX_MODEL_RUN']:
         m = get_arbitrary_model()
         original_image = random.randint(0, params['MAX_MODEL_RUN']//2)
         pred = 0
@@ -140,16 +143,17 @@ if __name__ == '__main__':
     global num_models
     num_models = len(MODELS)
     img_models = []
+
     img_models.append(Resnet18.remote())
     img_models.append(Resnet50.remote())
-    img_models.append(Resnet101.remote())
-    img_models.append(BEiT.remote())
-    img_models.append(ConvNeXT.remote())
-    img_models.append(ViT384.remote())
-    img_models.append(MIT_B0.remote())
+    #img_models.append(Resnet101.remote())
+    #img_models.append(BEiT.remote())
+    #img_models.append(ConvNeXT.remote())
+    #img_models.append(ViT384.remote())
+    #img_models.append(MIT_B0.remote())
 
-    '''
     
+    '''
     img = get_image.remote()
     import time
     import os
