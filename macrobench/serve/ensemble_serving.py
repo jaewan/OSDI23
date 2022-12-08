@@ -20,7 +20,7 @@ def get_params():
 @ray.remote
 def get_image():
     from PIL import Image
-    idx = random.randint(0, 11)
+    idx = random.randint(0, 9)
     if idx == 0:
         image = Image.open(r'/dev/shm/Double-Cat-Wallpaper.jpg')
     elif idx == 1:
