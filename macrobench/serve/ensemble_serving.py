@@ -10,7 +10,7 @@ def get_params():
     import argparse 
     global params
     parser = argparse.ArgumentParser()
-    parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=1)
+    parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=100)
     parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=1)
     parser.add_argument('--BATCH_INTERVAL', '-bi', type=int, default=1)
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
@@ -22,8 +22,7 @@ def get_params():
 @ray.remote
 def get_image():
     from PIL import Image
-    idx = random.randint(0, 3)
-    '''
+    idx = random.randint(0, 7)
     if idx == 0:
         image = Image.open(r'data/korean-flag.jpg')
     elif idx == 1:
@@ -32,8 +31,14 @@ def get_image():
         image = Image.open(r'data/qVnC9UJ.jpg')
     elif idx == 3:
         image = dataset["test"]["image"][0]
-    '''
-    image = Image.open(r'data/104801ab.jpg')
+    elif idx == 4:
+        image = Image.open(r'data/104801ab.jpg')
+    elif idx == 5:
+        image = Image.open(r'data/219648fg.jpg')
+    elif idx == 6:
+        image = Image.open(r'data/400853mt.jpg')
+    elif idx == 7:
+        image = Image.open(r'data/911093ab.jpg')
     return image
 
 @ray.remote

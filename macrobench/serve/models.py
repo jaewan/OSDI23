@@ -1,7 +1,7 @@
 import torch
 import ray
 
-MODELS = ['Resnet18', 'Resnet50', 'Resnet101', 'BEiT', 'ConvNeXT', 'ViT384', 'Resnet18', 'MIT_B0']
+MODELS = ['Resnet18', 'Resnet50', 'Resnet101', 'BEiT', 'ConvNeXT', 'ViT384', 'MIT_B0']
 
 class ImgModel:
     def __init__(self, model_name, model):
@@ -22,6 +22,7 @@ class ImgModel:
     def print_name(self):
         print(self.model_name)
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class Resnet18(ImgModel):
     def __init__(self):
@@ -42,6 +43,7 @@ class Resnet18(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class Resnet50(ImgModel):
     def __init__(self):
@@ -63,6 +65,7 @@ class Resnet50(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class Resnet101(ImgModel):
     def __init__(self):
@@ -85,6 +88,7 @@ class Resnet101(ImgModel):
         return self.model.config.id2label[predicted_label]
 
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class BEiT(ImgModel):
     def __init__(self):
@@ -103,6 +107,7 @@ class BEiT(ImgModel):
         predicted_class_idx = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_class_idx]
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class ConvNeXT(ImgModel):
     def __init__(self):
@@ -125,6 +130,7 @@ class ConvNeXT(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class ViT384(ImgModel):
     def __init__(self):
@@ -141,6 +147,7 @@ class ViT384(ImgModel):
         predicted_class_idx = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_class_idx]
 
+#@ray.remote(num_cpus=0, num_gpus=0.14)
 @ray.remote
 class MIT_B0(ImgModel):
     def __init__(self):
