@@ -8,7 +8,7 @@ then
 	exit
 fi
 
-if !(test -f $RAY_SPILL_DIR);
+if !([ -d $RAY_SPILL_DIR ]);
 then
 		sudo mkdir $RAY_SPILL_DIR
 fi

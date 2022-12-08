@@ -1,7 +1,7 @@
 #! /bin/bash 
 
-if !(test -f /dev/shm/*jpg);
-then
+jpgarray=(`find /dev/shm -maxdepth 1 -name "*.jpg"`)
+if [ ${#jpgarray[@]} -le 0 ]; then 
 	pushd /dev/shm
 
 	wget https://www.pixelstalk.net/wp-content/uploads/2016/03/Double-Cat-Wallpaper.jpg
