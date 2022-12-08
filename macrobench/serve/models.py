@@ -1,7 +1,7 @@
 import torch
 import ray
 
-MODELS = ['Resnet18', 'Resnet50', 'Resnet101', 'BEiT', 'ConvNeXT', 'ViT384', 'Resnet18']
+MODELS = ['Resnet18', 'Resnet50', 'Resnet101', 'BEiT', 'ConvNeXT', 'ViT384', 'Resnet18', 'MIT_B0']
 
 class ImgModel:
     def __init__(self, model_name, model):
@@ -22,7 +22,7 @@ class ImgModel:
     def print_name(self):
         print(self.model_name)
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class Resnet18(ImgModel):
     def __init__(self):
         from transformers import AutoFeatureExtractor, ResNetForImageClassification
@@ -42,7 +42,7 @@ class Resnet18(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class Resnet50(ImgModel):
     def __init__(self):
         from transformers import AutoFeatureExtractor, ResNetForImageClassification
@@ -63,7 +63,7 @@ class Resnet50(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class Resnet101(ImgModel):
     def __init__(self):
         from transformers import AutoFeatureExtractor, ResNetForImageClassification
@@ -85,7 +85,7 @@ class Resnet101(ImgModel):
         return self.model.config.id2label[predicted_label]
 
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class BEiT(ImgModel):
     def __init__(self):
         from transformers import BeitFeatureExtractor, BeitForImageClassification
@@ -103,7 +103,7 @@ class BEiT(ImgModel):
         predicted_class_idx = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_class_idx]
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class ConvNeXT(ImgModel):
     def __init__(self):
         from transformers import ConvNextFeatureExtractor, ConvNextForImageClassification
@@ -125,7 +125,7 @@ class ConvNeXT(ImgModel):
         predicted_label = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_label]
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class ViT384(ImgModel):
     def __init__(self):
         from transformers import ViTFeatureExtractor, ViTForImageClassification
@@ -141,31 +141,25 @@ class ViT384(ImgModel):
         predicted_class_idx = logits.argmax(-1).item()
         return self.model.config.id2label[predicted_class_idx]
 
+@ray.remote(num_cpus=1)
+class MIT_B0(ImgModel):
+    def __init__(self):
+        from transformers import SegformerFeatureExtractor, SegformerForImageClassification
+        self.feature_extractor = SegformerFeatureExtractor.from_pretrained("nvidia/mit-b0")
+        model = SegformerForImageClassification.from_pretrained("nvidia/mit-b0")
+        ImgModel.__init__(self, 'MIT_B0', model)
+
+    def predict(self, img):
+        inputs = self.feature_extractor(images=img, return_tensors="pt")
+        outputs = self.model(**inputs)
+        logits = outputs.logits
+        # model predicts one of the 1000 ImageNet classes
+        predicted_class_idx = logits.argmax(-1).item()
+        return self.model.config.id2label[predicted_class_idx]
 '''
-from transformers import SegformerFeatureExtractor, SegformerForImageClassification
-from PIL import Image
-import requests
 
-url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-image = Image.open(requests.get(url, stream=True).raw)
 
-feature_extractor = SegformerFeatureExtractor.from_pretrained("nvidia/mit-b0")
-model = SegformerForImageClassification.from_pretrained("nvidia/mit-b0")
-
-inputs = feature_extractor(images=image, return_tensors="pt")
-outputs = model(**inputs)
-logits = outputs.logits
-# model predicts one of the 1000 ImageNet classes
-predicted_class_idx = logits.argmax(-1).item()
-print("Predicted class:", model.config.id2label[predicted_class_idx])
-class MIT-B0(ImgModel):
-    def __init__(self):
-
-        ImgModel.__init__(self, '', )
-
-    def predict(self, img):
-
-@ray.remote
+@ray.remote(num_cpus=1)
 class (ImgModel):
     def __init__(self):
 
@@ -173,7 +167,7 @@ class (ImgModel):
 
     def predict(self, img):
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class (ImgModel):
     def __init__(self):
 
@@ -181,7 +175,7 @@ class (ImgModel):
 
     def predict(self, img):
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class (ImgModel):
     def __init__(self):
 
@@ -189,7 +183,7 @@ class (ImgModel):
 
     def predict(self, img):
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class (ImgModel):
     def __init__(self):
 
