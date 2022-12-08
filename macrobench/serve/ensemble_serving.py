@@ -1,44 +1,50 @@
 import ray
 from models import *
-from datasets import load_dataset
 import random
 import numpy as np
 
 params=0
-dataset = 0
 def get_params():  
     import argparse 
     global params
     parser = argparse.ArgumentParser()
-    parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=100)
+    parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=200)
     parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=1)
     parser.add_argument('--BATCH_INTERVAL', '-bi', type=int, default=1)
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
-    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=1_000_000_000)
-    parser.add_argument('--MAX_MODEL_RUN', '-m', type=int, default=0)
+    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=4_000_000_000)
+    parser.add_argument('--MAX_MODEL_RUN', '-m', type=int, default=10)
     args = parser.parse_args()
     params = vars(args) 
 
 @ray.remote
 def get_image():
     from PIL import Image
-    idx = random.randint(0, 7)
+    idx = random.randint(0, 11)
     if idx == 0:
-        image = Image.open(r'data/korean-flag.jpg')
+        image = Image.open(r'/dev/shm/Double-Cat-Wallpaper.jpg')
     elif idx == 1:
-        image = Image.open(r'data/Double-Cat-Wallpaper.jpg')
+        image = Image.open(r'/dev/shm/qVnC9UJ.jpg')
     elif idx == 2:
-        image = Image.open(r'data/qVnC9UJ.jpg')
+        image = Image.open(r'/dev/shm/wp11786853.jpg')
     elif idx == 3:
-        image = dataset["test"]["image"][0]
+        image = Image.open(r'/dev/shm/wp11177599.jpg')
     elif idx == 4:
-        image = Image.open(r'data/104801ab.jpg')
+        image = Image.open(r'/dev/shm/wp3878871.jpg')
     elif idx == 5:
-        image = Image.open(r'data/219648fg.jpg')
+        image = Image.open(r'/dev/shm/wp11335732.jpg')
     elif idx == 6:
-        image = Image.open(r'data/400853mt.jpg')
+        image = Image.open(r'/dev/shm/uwp3008684.jpeg')
     elif idx == 7:
-        image = Image.open(r'data/911093ab.jpg')
+        image = Image.open(r'/dev/shm/uwp2993171.jpeg')
+    elif idx == 8:
+        image = Image.open(r'/dev/shm/104801ab.jpg')
+    elif idx == 9:
+        image = Image.open(r'/dev/shm/219648fg.jpg')
+    elif idx == 10:
+        image = Image.open(r'/dev/shm/400853mt.jpg')
+    elif idx == 11:
+        image = Image.open(r'/dev/shm/911093ab.jpg')
     return image
 
 @ray.remote
@@ -79,8 +85,6 @@ def initialize():
 
     # Load image libraries
     random.seed(0)
-    global dataset
-    dataset = load_dataset("huggingface/cats-image")
 
 def get_arbitrary_model():
     #return img_models[random.randint(0, num_models)]
@@ -151,11 +155,11 @@ if __name__ == '__main__':
 
     img_models.append(Resnet18.remote())
     img_models.append(Resnet50.remote())
-    #img_models.append(Resnet101.remote())
-    #img_models.append(BEiT.remote())
-    #img_models.append(ConvNeXT.remote())
-    #img_models.append(ViT384.remote())
-    #img_models.append(MIT_B0.remote())
+    img_models.append(Resnet101.remote())
+    img_models.append(BEiT.remote())
+    img_models.append(ConvNeXT.remote())
+    img_models.append(ViT384.remote())
+    img_models.append(MIT_B0.remote())
 
     
     '''
@@ -187,7 +191,6 @@ if __name__ == '__main__':
     start = perf_counter()
     for _ in range(params['NUM_BATCHES']):
         res.append(batch_submitter())
-    os.system('ray memory --stats-only')
 
     models_run = 0
     for i in range(len(res)):
@@ -195,4 +198,5 @@ if __name__ == '__main__':
             models_run += ray.get(res[i][j])
     end = perf_counter()
 
+    os.system('ray memory --stats-only')
     print(f"{params['NUM_BATCHES']} batches with {params['BATCH_SIZE']} requests : {end-start} ran {models_run} models")
