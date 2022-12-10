@@ -8,19 +8,20 @@ def get_params():
     import argparse 
     global params
     parser = argparse.ArgumentParser()
-    parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=200)
-    parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=1)
-    parser.add_argument('--BATCH_INTERVAL', '-bi', type=int, default=1)
+    parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=1)
+    parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=100)
+    parser.add_argument('--BATCH_INTERVAL', '-bi', type=int, default=0)
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
-    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=4_000_000_000)
+    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=1_000_000_000)
     parser.add_argument('--MAX_MODEL_RUN', '-m', type=int, default=10)
     args = parser.parse_args()
     params = vars(args) 
 
 @ray.remote
-def get_image():
+def get_image(i):
     from PIL import Image
-    idx = random.randint(0, 9)
+    #idx = random.randint(0, 9)
+    idx = i%12
     if idx == 0:
         image = Image.open(r'/dev/shm/Double-Cat-Wallpaper.jpg')
     elif idx == 1:
@@ -47,7 +48,7 @@ def get_image():
         image = Image.open(r'/dev/shm/911093ab.jpg')
     return image
 
-@ray.remote
+@ray.remote(num_returns=2)
 def preprocess(img):
     import torchvision.transforms as transforms
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -66,7 +67,7 @@ def preprocess(img):
         transforms.ToTensor(),
         normalize
     ])
-    return preprocessing(img)
+    return preprocessing(img), np.zeros(50_000_000 // 8)
                                                                                                          
 def initialize():
     import os
@@ -78,13 +79,13 @@ def initialize():
     if spill_dir:
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
                                     "params": {"directory_path": spill_dir}},)}, object_store_memory=params['OBJECT_STORE_SIZE'])
+        #ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
+        #                            "params": {"directory_path": spill_dir}},)})
         print("Ray spill dir set")
     else:
         ray.init(object_store_memory=params['OBJECT_STORE_SIZE'])
         print("Ray default init")
 
-    # Load image libraries
-    random.seed(0)
 
 def get_arbitrary_model():
     #return img_models[random.randint(0, num_models)]
@@ -95,16 +96,13 @@ def get_arbitrary_model():
 def aggregator(img, seq):
     random.seed(seq)
     INITIAL_MODEL_BATCH = 3
-    processed_img = preprocess.remote(img)
+    processed_img, original_image = preprocess.remote(img)
 
     prediction_ref = []
     predictions = {}
     for _ in range(INITIAL_MODEL_BATCH):
         m = get_arbitrary_model()
-        if _ == 0:
-            prediction_ref.append(m.predict.remote(processed_img))
-        else:
-            prediction_ref.append(m.predict.remote(img))
+        prediction_ref.append(m.simulate.remote(img, img, True))
     num_models_run = INITIAL_MODEL_BATCH
 
     for i in range(INITIAL_MODEL_BATCH):
@@ -116,12 +114,12 @@ def aggregator(img, seq):
     vote = 0
     while vote < ((num_models_run//2) + 1) and num_models_run <= params['MAX_MODEL_RUN']:
         m = get_arbitrary_model()
-        original_image = random.randint(0, params['MAX_MODEL_RUN']//2)
+        run_original_image = random.randint(0, 2)# params['MAX_MODEL_RUN']//2)
         pred = 0
-        if original_image:
-            pred = ray.get(m.predict.remote(img))
+        if run_original_image:
+            pred = ray.get(m.simulate.remote(img, img, False))
         else:
-            pred = ray.get(m.predict.remote(processed_img))
+            pred = ray.get(m.simulate.remote(processed_img, original_image, False))
 
         num_models_run += 1
         predictions[pred] = predictions.get(pred,0) + 1
@@ -132,12 +130,9 @@ def aggregator(img, seq):
 
 def batch_submitter():
     import time
-    #imgages = []
     res = []
     for i in range(params['BATCH_SIZE']):
-        #images.append(get_image.remote())
-        img = get_image.remote()
-        res.append(aggregator.remote(img, i))
+        res.append(aggregator.remote(get_image.remote(i), i))
     time.sleep(params['BATCH_INTERVAL'])
     return res
 
@@ -163,32 +158,38 @@ if __name__ == '__main__':
 
     
     '''
-    img = get_image.remote()
-    import time
-    import os
-    time.sleep(1)
-    os.system('ray memory --stats-only')
-    processed_img = preprocess.remote(img)
-    time.sleep(1)
-    os.system('ray memory --stats-only')
-    res = []
-    for model in img_models:
-        res.append(model.predict.remote(img))
+    for i in range(12):
+        img = get_image.remote(i)
+        import time
+        import os
+        time.sleep(1)
+        os.system('ray memory --stats-only')
+        processed_img, original_image = preprocess.remote(img)
+        time.sleep(1)
+        os.system('ray memory --stats-only')
+        res = []
+        for model in img_models:
+            res.append(model.predict.remote(img))
 
-    for r in res:
-        print(ray.get(r))
+        print('\t\t Original Image')
+        for r in res:
+            print(ray.get(r))
 
-    res = []
-    for model in img_models:
-        res.append(model.predict.remote(processed_img))
+        res = []
+        for model in img_models:
+            res.append(model.predict.remote(processed_img))
 
-    for r in res:
-        print(ray.get(r))
+        print('\t\t Preprocessed Image')
+        for r in res:
+            print(ray.get(r))
    
     '''
     import os
     res = []
     start = perf_counter()
+    print('num batches', params['NUM_BATCHES'])
+    print('batche size', params['BATCH_SIZE'])
+    print('batche interval', params['BATCH_INTERVAL'])
     for _ in range(params['NUM_BATCHES']):
         res.append(batch_submitter())
 
