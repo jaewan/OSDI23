@@ -17,6 +17,10 @@ pip install pyarrow
 pip install pandas
 pip install tqdm
 pip install matplotlib
+
+pip install ray
+pip uninstall ray
+
 #Ray Serve
 pip install fastapi
 pip install uvicorn
@@ -30,7 +34,6 @@ pip install opencensus
 pip install prometheus_client
 pip install gpustat
 pip install aiohttp_cors
-pip install datasets[vision]
 
 #Nodejs
 echo "Install Nodejs"
