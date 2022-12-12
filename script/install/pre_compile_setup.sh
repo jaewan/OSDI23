@@ -57,6 +57,8 @@ pushd  ~/
 git clone https://github.com/jaewan/ray_memory_management.git
 cd ray_memory_management
 git checkout eager-spill
+cd python/ray/dashboard/client
+npm install && npm ci && npm run build
 popd
 
 # Get production Ray 2.2.0
