@@ -4,6 +4,7 @@ import numpy as np
 import time
 import argparse
 import os
+import json
 import ray
 from termcolor import colored
 import re
@@ -77,10 +78,13 @@ def run_test(benchmark):
         debugging = True
 
     for i in range(NUM_TRIAL):
-        ray.init(_system_config={
-        "object_spilling_config": json.dumps(
-            {"type": "filesystem", "params": {"directory_path": $RAY_SPILL_DIR}},
-            object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE , num_cpus = NUM_WORKER)
+        spill_dir = os.getenv('RAY_SPILL_DIR')
+        if spill_dir:
+            ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
+                                    "params": {"directory_path": spill_dir}},)}, num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
+        else:
+            ray.init(num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
+
         if not debugging:
             warmup(OBJECT_STORE_SIZE)
 

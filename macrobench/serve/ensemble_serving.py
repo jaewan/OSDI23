@@ -2,6 +2,7 @@ import ray
 import os
 from models import *
 import random
+import time
 import numpy as np
 
 params=0
@@ -150,15 +151,18 @@ def aggregator(img, seq):
         predictions[pred] = predictions.get(pred,0) + 1
         vote = predictions[pred]
 
-    return (calculation_time, num_models_run)
+    end_time = time.clock_gettime(time.CLOCK_MONOTONIC_RAW)
+    return (end_time, num_models_run)
 
 
 def batch_submitter():
     import time
     res = []
     global task_id
+    global latencies
     for i in range(params['BATCH_SIZE']):
         #res.append(aggregator.remote(get_image.remote(i), i))
+        latencies.append(time.clock_gettime(time.CLOCK_MONOTONIC_RAW))
         res.append(aggregator.remote(get_image.remote(i), task_id))
         task_id += 1
     time.sleep(params['BATCH_INTERVAL'])
@@ -198,10 +202,12 @@ if __name__ == '__main__':
     global task_id
     global num_models
     global img_models
+    global latencies
 
     task_id = 0
     num_models = len(MODELS)
     img_models = []
+    latencies = []
 
     img_models.append(Resnet18.remote())
     img_models.append(Resnet50.remote())
@@ -246,17 +252,21 @@ if __name__ == '__main__':
 
     models_run = 0
     three_run = 0
-    total_calculation_time = 0
+    tid = 0
+    real_latencies = []
     for i in range(len(res)):
         for j in range(len(res[i])):
-            calculation_time, mod_run = ray.get(res[i][j])
-            total_calculation_time += calculation_time
+            end_time, mod_run = ray.get(res[i][j])
             #print(j, perf_counter() - start)
+            if(end_time - latencies[tid] > 0):
+                real_latencies.append(end_time - latencies[tid])
+
             if mod_run == 3:
                 three_run += 1
-                #print("!", total_calculation_time, perf_counter() - start)
             models_run += mod_run
+            tid += 1
     end = perf_counter()
 
-    print("***************", three_run, total_calculation_time)
+    print(real_latencies)
+
     store_results(end-start)
