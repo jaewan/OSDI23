@@ -156,6 +156,7 @@ def aggregator(img, seq):
 def batch_submitter():
     import time
     res = []
+    global task_id
     for i in range(params['BATCH_SIZE']):
         #res.append(aggregator.remote(get_image.remote(i), i))
         res.append(aggregator.remote(get_image.remote(i), task_id))
@@ -194,9 +195,10 @@ if __name__ == '__main__':
 
     # Load Images
 
-    global img_models
-    global num_models
     global task_id
+    global num_models
+    global img_models
+
     task_id = 0
     num_models = len(MODELS)
     img_models = []
