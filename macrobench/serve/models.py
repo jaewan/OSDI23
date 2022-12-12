@@ -3,7 +3,7 @@ import ray
 import time
 import random
 
-SIMULATE=False
+SIMULATE=True
 
 MODELS = ['Resnet18', 'Resnet50', 'Resnet101', 'BEiT', 'ConvNeXT', 'ViT384', 'MIT_B0']
 model_runtime = {
@@ -26,10 +26,10 @@ model_runtime = {
         'MIT_B0' : 0
 }
 '''
-def simulation(first, model_name):
+def simulation(first, model_name, idx):
     time.sleep(model_runtime[model_name])
     if first:
-        idx = random.randint(0, 5)
+        #idx = random.randint(0, 5)
         if idx == 0:
             return 'dog'
         elif idx == 1:
@@ -40,10 +40,40 @@ def simulation(first, model_name):
             return 'bat'
         elif idx == 4:
             return 'elephant'
+        elif idx == 5:
+            return 'monkey'
+        elif idx == 6:
+            return 'cow'
+        elif idx == 7:
+            return 'lion'
+        elif idx == 8:
+            return 'skunk'
+        elif idx == 9:
+            return 'camel'
+        elif idx == 10:
+            return 'zebra'
+        elif idx == 11:
+            return 'skunk'
+        elif idx == 12:
+            return 'ant'
+        elif idx == 13:
+            return 'spider'
+        elif idx == 14:
+            return 'mosquitoes'
+        elif idx == 15:
+            return 'puma'
+        elif idx == 16:
+            return 'sagull'
+        elif idx == 17:
+            return 'bufallow'
+        elif idx == 18:
+            return 'whale'
+        elif idx == 19:
+            return 'dolphin'
         else:
             return 'cat'
-    prob = 5
-    idx = random.randint(0, prob)
+    prob =10 
+    #idx = random.randint(0, prob)
     if idx < prob:
         return 'cat'
     else:
@@ -54,6 +84,11 @@ class ImgModel:
         self.model = model
         self.model_name = model_name
         random.seed(MODELS.index(model_name))
+        random_numbers = []
+        for _ in range(1000):
+            random_numbers.append(random.randint(0,20))
+        self.random_numbers = random_numbers
+        self.idx = 0
 
     def predict(self, img):
         try:
@@ -78,11 +113,14 @@ class Resnet18(ImgModel):
         self.feature_extractor = AutoFeatureExtractor.from_pretrained("microsoft/resnet-18")
 
         ImgModel.__init__(self, 'Resnet18', ResNetForImageClassification.from_pretrained("microsoft/resnet-18"))
-        random.seed(0)
+        #random.seed(0)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):
@@ -105,11 +143,14 @@ class Resnet50(ImgModel):
         self.feature_extractor = AutoFeatureExtractor.from_pretrained("microsoft/resnet-50")
 
         ImgModel.__init__(self, 'Resnet50', ResNetForImageClassification.from_pretrained("microsoft/resnet-50"))
-        random.seed(1)
+        #random.seed(1)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):
@@ -134,11 +175,14 @@ class Resnet101(ImgModel):
         self.feature_extractor = AutoFeatureExtractor.from_pretrained("microsoft/resnet-101")
 
         ImgModel.__init__(self, 'Resnet101', ResNetForImageClassification.from_pretrained("microsoft/resnet-101"))
-        random.seed(2)
+        #random.seed(2)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):
@@ -164,11 +208,14 @@ class BEiT(ImgModel):
         self.feature_extractor = BeitFeatureExtractor.from_pretrained('microsoft/beit-base-patch16-224-pt22k-ft22k')
 
         ImgModel.__init__(self, 'BEiT', model)
-        random.seed(3)
+        #random.seed(3)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):
@@ -191,11 +238,14 @@ class ConvNeXT(ImgModel):
         model = ConvNextForImageClassification.from_pretrained("facebook/convnext-tiny-224")
 
         ImgModel.__init__(self, 'ConvNeXT', model)
-        random.seed(4)
+        #random.seed(4)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):
@@ -219,11 +269,14 @@ class ViT384(ImgModel):
         self.feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-384')
         model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-384')
         ImgModel.__init__(self, 'ViT384', model)
-        random.seed(5)
+        #random.seed(5)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):
@@ -243,11 +296,14 @@ class MIT_B0(ImgModel):
         self.feature_extractor = SegformerFeatureExtractor.from_pretrained("nvidia/mit-b0")
         model = SegformerForImageClassification.from_pretrained("nvidia/mit-b0")
         ImgModel.__init__(self, 'MIT_B0', model)
-        random.seed(6)
+        #random.seed(6)
 
-    def simulate(self, img, original_image, first):
+    def simulate(self, img, original_image, first, idx):
         if SIMULATE:
-            return simulation(first, self.model_name)
+            idx = idx % 1000
+            idx = self.random_numbers[idx]
+            self.idx += 1
+            return model_runtime[self.model_name], simulation(first, self.model_name, idx)
         return self.predict(img)
 
     def predict(self, img):

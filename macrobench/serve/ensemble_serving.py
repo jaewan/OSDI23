@@ -1,4 +1,5 @@
 import ray
+import os
 from models import *
 import random
 import numpy as np
@@ -9,10 +10,10 @@ def get_params():
     global params
     parser = argparse.ArgumentParser()
     parser.add_argument('--NUM_BATCHES', '-nb', type=int, default=1)
-    parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=100)
-    parser.add_argument('--BATCH_INTERVAL', '-bi', type=int, default=0)
-    parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
-    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=1_000_000_000)
+    parser.add_argument('--BATCH_SIZE', '-bs', type=int, default=2)
+    parser.add_argument('--BATCH_INTERVAL', '-bi', type=float, default=0)
+    parser.add_argument('--RESULT_PATH', '-r', type=str, default="../../data/ensemble_serve/dummy.csv")
+    parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=8_000_000_000)
     parser.add_argument('--MAX_MODEL_RUN', '-m', type=int, default=10)
     args = parser.parse_args()
     params = vars(args) 
@@ -70,7 +71,6 @@ def preprocess(img):
     return preprocessing(img), np.zeros(50_000_000 // 8)
                                                                                                          
 def initialize():
-    import os
     import json
     get_params()
 
@@ -87,54 +87,104 @@ def initialize():
         print("Ray default init")
 
 
+model_runtime = [
+         0.007,
+         0.007,
+         0.011,
+         0.018,
+         0.006,
+         0.059,
+         0.016
+]
 def get_arbitrary_model():
     #return img_models[random.randint(0, num_models)]
-    return img_models[random.randint(0, len(img_models) - 1)]
+    i = random.randint(0, len(img_models) - 1)
+    return model_runtime[i], img_models[i]
 
 
 @ray.remote(num_cpus=1)
 def aggregator(img, seq):
     random.seed(seq)
+    #random_numbers = []
+    #for _ in range(1,params['MAX_MODEL_RUN']):
+    #    random_numbers.append(random.randint(0,1))
     INITIAL_MODEL_BATCH = 3
     processed_img, original_image = preprocess.remote(img)
 
+    calculation_time = 0
     prediction_ref = []
     predictions = {}
     for _ in range(INITIAL_MODEL_BATCH):
-        m = get_arbitrary_model()
-        prediction_ref.append(m.simulate.remote(img, img, True))
+        t, m = get_arbitrary_model()
+        #m = img_models[seq % len(img_models)]
+        prediction_ref.append(m.simulate.remote(img, img, True, seq))
+        seq = seq +1
     num_models_run = INITIAL_MODEL_BATCH
 
     for i in range(INITIAL_MODEL_BATCH):
-        pred = ray.get(prediction_ref[i])
+        inference_time, pred = ray.get(prediction_ref[i])
+        calculation_time += t
         predictions[pred] = predictions.get(pred,0) + 1
         if predictions[pred] >= ((num_models_run//2) + 1):
-            return num_models_run
+            return calculation_time, num_models_run
 
     vote = 0
+    i = 0
     while vote < ((num_models_run//2) + 1) and num_models_run <= params['MAX_MODEL_RUN']:
-        m = get_arbitrary_model()
-        run_original_image = random.randint(0, 2)# params['MAX_MODEL_RUN']//2)
+        t, m = get_arbitrary_model()
+        #m = img_models[seq % len(img_models)]
+        #seq = seq +1
+        run_original_image = random.randint(0, 1)# params['MAX_MODEL_RUN']//2)
+        #run_original_image = random_numbers[i]
+        i += 1
         pred = 0
         if run_original_image:
-            pred = ray.get(m.simulate.remote(img, img, False))
+            inference_time, pred = ray.get(m.simulate.remote(img, img, False,seq))
+            calculation_time += t
         else:
-            pred = ray.get(m.simulate.remote(processed_img, original_image, False))
+            inference_time, pred = ray.get(m.simulate.remote(processed_img, original_image, False, seq))
+            calculation_time += t
+        seq = seq +1
 
         num_models_run += 1
         predictions[pred] = predictions.get(pred,0) + 1
         vote = predictions[pred]
 
-    return num_models_run
+    return (calculation_time, num_models_run)
 
 
 def batch_submitter():
     import time
     res = []
     for i in range(params['BATCH_SIZE']):
+        #res.append(aggregator.remote(get_image.remote(i), i))
         res.append(aggregator.remote(get_image.remote(i), i))
     time.sleep(params['BATCH_INTERVAL'])
     return res
+
+def store_results(runtime):
+    import subprocess
+    memory_stat = subprocess.run(['ray', 'memory', '--stats-only'], stdout=subprocess.PIPE)
+    words = memory_stat.stdout.decode('utf-8').split()
+    try:
+        idx = words.index("Spilled")
+        spilled = int(words[idx+1])
+    except:
+        spilled = 0
+    try:
+        idx = words.index("Restored")
+        restored = int(words[idx+1])
+    except:
+        restored = 0
+
+    import csv
+    result_path = params['RESULT_PATH']
+    result_csv = [runtime, params['NUM_BATCHES'],params['BATCH_SIZE'],params['BATCH_INTERVAL'], models_run, spilled, restored, params['OBJECT_STORE_SIZE']]
+    print(result_csv)
+    if 'dummy' not in result_path:
+        with open(result_path, 'a', encoding='UTF-8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(result_csv)
 
 if __name__ == '__main__':
     from time import perf_counter
@@ -184,20 +234,24 @@ if __name__ == '__main__':
             print(ray.get(r))
    
     '''
-    import os
     res = []
     start = perf_counter()
-    print('num batches', params['NUM_BATCHES'])
-    print('batche size', params['BATCH_SIZE'])
-    print('batche interval', params['BATCH_INTERVAL'])
     for _ in range(params['NUM_BATCHES']):
         res.append(batch_submitter())
 
     models_run = 0
+    three_run = 0
+    total_calculation_time = 0
     for i in range(len(res)):
         for j in range(len(res[i])):
-            models_run += ray.get(res[i][j])
+            calculation_time, mod_run = ray.get(res[i][j])
+            total_calculation_time += calculation_time
+            #print(j, perf_counter() - start)
+            if mod_run == 3:
+                three_run += 1
+                #print("!", total_calculation_time, perf_counter() - start)
+            models_run += mod_run
     end = perf_counter()
 
-    os.system('ray memory --stats-only')
-    print(f"{params['NUM_BATCHES']} batches with {params['BATCH_SIZE']} requests : {end-start} ran {models_run} models")
+    print("***************", three_run, total_calculation_time)
+    store_results(end-start)
