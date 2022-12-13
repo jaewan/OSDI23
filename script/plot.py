@@ -6,15 +6,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-application = "pipeline"
+application = "streaming"
 if len(sys.argv) > 1:
     application = sys.argv[1]
 
-path_prefix = "../data/" + application + "_"
+path_prefix = "../data/" + application + "/"
 headers = ["std","var","working_set","object_store_size","object_size","time","num_spill_objs","spilled_size"]
-files = ["RAY","DFS","DFS_Backpressure","DFS_BlockSpill","DFS_Backpressure_BlockSpill_Deadlock", "EAGERSPILL"]#,"1","2"]
-legends = ["Production Ray","DFS + [                   ] + [             ]","DFS + Backpressure + [             ]",
-        "DFS + [                   ] + BlockSpill","DFS + Backpressure + BlockSpill", "EagerSpill"]#,"Deadlock #1","Deadlock #2"]
+files = ["RAY","DFS","DFS_Backpressure","DFS_BlockSpill","DFS_Backpressure_BlockSpill_Deadlock", "EagerSpill"]#,"1","2"]
+legends = ["Production Ray","DFS + [                   ] + [             ]","DFS + SkiRental + [             ]",
+        "DFS + [                   ] + SkiRental","DFS + Backpressure + SkiRental", "EagerSpill"]#,"Deadlock #1","Deadlock #2"]
 
 working_sets = [1,2,4,8]
 working_sets_len = len(working_sets)
@@ -47,9 +47,11 @@ for file in files:
     error.append(d)
     i += 1
 
+plt.grid(zorder=0, axis='y', color='grey')
 
 # Set position of bar on X axis
 br = []
+plt.grid(zorder=0, axis='y', color='grey')
 br.append(np.arange(working_sets_len))
 for i in range(num_of_bars - 1):
     br.append([x + barWidth for x in br[i]])
@@ -59,7 +61,7 @@ for i in range(num_of_bars):
     if i == 2:
         plt.bar(br[i], data[i], color = colors[i], width = barWidth,
                 edgecolor ='black', hatch='\\',  label = legends[i])
-    elif i ==3:
+    elif i == 3:
         plt.bar(br[i], data[i], color = colors[i], width = barWidth,
                 edgecolor ='black', hatch='//',  label = legends[i])
     elif i ==4:
@@ -73,7 +75,7 @@ pos = 0
 for i in range(working_sets_len):
     for j in range(num_of_bars):
         plt.vlines(pos, error[j][i]['min'], error[j][i]['max'], color='k')
-        plt.text(pos, data[j][i], num_spilled_objs[j][i], ha='center', va='bottom')
+        #plt.text(pos, data[j][i], num_spilled_objs[j][i], ha='center', va='bottom')
         pos += barWidth
     pos += barWidth
 
@@ -82,6 +84,6 @@ plt.xlabel('Working Set Ratio', fontweight ='bold', fontsize = 35)
 plt.ylabel('Runtime', fontweight ='bold', fontsize = 35)
 plt.xticks([r + barWidth for r in range(working_sets_len)], working_sets, fontsize = 20)
 plt.yticks(fontsize = 20)
-plt.legend(loc='upper left', fontsize=20)
+#plt.legend(loc='upper left', fontsize=20)
 #plt.title("Performance Breakdown with Streaming", fontweight ='bold', fontsize = 18)
 plt.savefig(application+".png")
