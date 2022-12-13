@@ -25,6 +25,7 @@ barWidth = 1/(num_of_bars+1)
 fig = plt.subplots(figsize =(12, 8))
 viridis = cm.get_cmap('viridis',num_of_bars)
 
+colors = ['#10739E', '#D69B00', '#B38100', '#B38100', '#7D5A00', '#4D3700']
 
 data = []
 std = []
@@ -55,8 +56,18 @@ for i in range(num_of_bars - 1):
 br1 = np.arange(len(data[0]))
 
 for i in range(num_of_bars):
-    plt.bar(br[i], data[i], color = viridis.colors[i], width = barWidth,
-            edgecolor ='grey', label = legends[i])
+    if i == 2:
+        plt.bar(br[i], data[i], color = colors[i], width = barWidth,
+                edgecolor ='black', hatch='\\',  label = legends[i])
+    elif i ==3:
+        plt.bar(br[i], data[i], color = colors[i], width = barWidth,
+                edgecolor ='black', hatch='//',  label = legends[i])
+    elif i ==4:
+        plt.bar(br[i], data[i], color = colors[i], width = barWidth,
+                edgecolor ='black', hatch='xx',  label = legends[i])
+    else:
+        plt.bar(br[i], data[i], color = colors[i], width = barWidth,
+                edgecolor ='black', label = legends[i])
 
 pos = 0
 for i in range(working_sets_len):
