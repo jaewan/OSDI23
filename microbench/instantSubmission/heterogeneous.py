@@ -178,4 +178,4 @@ def heterogeneous_workloads():
     return end_time - start_time
 
 if __name__ == '__main__':
-    run_test(heterogeneous_workloads_multiple)
+    run_test(heterogeneous_workloads)

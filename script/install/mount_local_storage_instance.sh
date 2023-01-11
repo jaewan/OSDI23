@@ -10,7 +10,7 @@ fi
 
 if !([ -d $RAY_SPILL_DIR ]);
 then
-		sudo mkdir $RAY_SPILL_DIR
+	sudo mkdir $RAY_SPILL_DIR
 fi
 
 
