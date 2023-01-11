@@ -70,16 +70,16 @@ def pipeline(working_set_size):
 
     num_fill_object_store = (working_set_size//OBJECT_SIZE)//NUM_STAGES
     refs = [[] for _ in range(NUM_STAGES)]
-    for _ in range(WORKING_SET_RATIO*num_fill_object_store):
+    for _ in range(num_fill_object_store):
         refs[0].append(producer.remote())
 
     for stage in range(1, NUM_STAGES):
-        for i in range(WORKING_SET_RATIO*num_fill_object_store):
+        for i in range(*num_fill_object_store):
             refs[stage].append(consumer.remote(refs[stage-1][i]))
         del refs[stage-1]
 
     res = []
-    for i in range(WORKING_SET_RATIO*num_fill_object_store):
+    for i in range(num_fill_object_store):
         res.append(last_consumer.remote(refs[NUM_STAGES-1][i]))
         #del r
 
@@ -114,7 +114,7 @@ def streaming(working_set_size):
         return np.zeros(OBJECT_SIZE // 8)
 
     num_fill_object_store = (working_set_size//OBJECT_SIZE)//NUM_STAGES
-    n = WORKING_SET_RATIO*num_fill_object_store
+    n = num_fill_object_store
 
     refs = [[] for _ in range(NUM_STAGES)]
     for _ in range(n):

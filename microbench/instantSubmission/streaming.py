@@ -23,6 +23,7 @@ NUM_STAGES = params['NUM_STAGES']
 NUM_TRIAL = params['NUM_TRIAL']
 NUM_WORKER = params['NUM_WORKER']
 LATENCY = params['LATENCY']
+TEST_OFFLINE = params['OFFLINE']
 OBJECT_STORE_BUFFER_SIZE = 50_000_000 #this value is to add some space in ObjS for nprand metadata and ray object metadata
 
 def streaming():
@@ -125,6 +126,6 @@ def offline_streaming():
 
 ####################### Test ####################### 
 if TEST_OFFLINE:
-    run_test(offline_pipeline)
+    run_test(offline_streaming)
 else:
-    run_test(pipeline)
+    run_test(streaming)
