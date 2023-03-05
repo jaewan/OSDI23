@@ -1,9 +1,9 @@
 #! /bin/bash
 
-DEBUG=false
+DEBUG=true
 
 ################ System Variables ################ 
-APPLICATION=shuffle
+APPLICATION=pipeline
 LOG_DIR=../data/$APPLICATION/
 TEST_FILE=../microbench/instantSubmission/$APPLICATION.py
 OBJECT_STORE_SIZE=4000000000
@@ -12,13 +12,13 @@ OBJECT_SIZE=100000000
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
-DFS=false
+DFS=true
 DFS_EVICT=false
-DFS_BACKPRESSURE=true
-DFS_BLOCKSPILL=true
+DFS_BACKPRESSURE=false
+DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=true
-DFS_EAGERSPILL=true
+DFS_BACKPRESSURE_BLOCKSPILL=false
+DFS_EAGERSPILL=false
 
 function Test()
 {
@@ -32,13 +32,15 @@ function Test()
 	then
 		#for w in {1,2,4,8}
 		#do
-		w=4
+		w=8
 			let a=20000
-			echo $5 -w $w 
+			echo $6 -w $w 
+			RAY_worker_lease_timeout_milliseconds=0 RAY_worker_cap_enabled=false \
+			RAY_PROFILING=1\
 			RAY_BACKEND_LOG_LEVEL=debug \
 			RAY_block_tasks_threshold=1.0 RAY_object_spilling_threshold=1.0 RAY_spill_wait_time=$a RAY_enable_Deadlock2=true \
 			RAY_enable_BlockTasks=$BACKPRESSURE  RAY_enable_EvictTasks=$EVICT RAY_enable_BlockTasksSpill=$BLOCKSPILL RAY_enable_EagerSpill=$EAGERSPILL\
-			python $TEST_FILE -w $w -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t 1 -nw 40
+			python $TEST_FILE -w $w -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t 1 -nw 32
 		#done
 	else
 		test -f "$RESULT_FILE" && rm $RESULT_FILE
@@ -47,6 +49,7 @@ function Test()
 		do
 			let a=50000
 			echo $6 -w $w 
+			RAY_worker_lease_timeout_milliseconds=0 RAY_worker_cap_enabled=false \
 			RAY_block_tasks_threshold=1.0 RAY_object_spilling_threshold=1.0 RAY_spill_wait_time=$a RAY_enable_Deadlock2=$BLOCKSPILL \
 			RAY_enable_BlockTasks=$BACKPRESSURE  RAY_enable_EvictTasks=$EVICT RAY_enable_BlockTasksSpill=$BLOCKSPILL RAY_enable_EagerSpill=$EAGERSPILL\
 			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE  -off $OFF -t 5 -nw 32 
@@ -57,13 +60,13 @@ function Test()
 
 if $Production_RAY;
 then
-	#./../script/install/install_production_ray.sh
+	./../script/install/install_production_ray.sh
 	Test false false false false false RAY
 fi
 
 if $DFS;
 then
-	#./../script/install/install_boa.sh
+	./../script/install/install_boa.sh
 	Test false false false false false DFS
 fi
 

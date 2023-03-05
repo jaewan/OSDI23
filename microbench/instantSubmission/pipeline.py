@@ -121,6 +121,8 @@ def offline_pipeline():
 ####################### Test ####################### 
 if __name__ == '__main__':
     if TEST_OFFLINE:
+        print('Off version')
         run_test(offline_pipeline)
     else:
+        print('Online version')
         run_test(pipeline)

@@ -11,6 +11,11 @@ import re
 
 params=0
 
+def boolean_string(s):
+    if s not in {'False', 'True', 'false', 'true'}:
+        raise ValueError('Not a valid boolean string')
+    return (s == 'True' or  s == 'true')
+
 def get_params():
     global params
     parser = argparse.ArgumentParser()
@@ -23,7 +28,7 @@ def get_params():
     parser.add_argument('--NUM_WORKER', '-nw', type=int, default=32)
     parser.add_argument('--SEED', '-s', type=int, default=0)
     parser.add_argument('--LATENCY', '-l', type=float, default=0)
-    parser.add_argument('--OFFLINE', '-off', type=bool, default=False)
+    parser.add_argument('--OFFLINE', '-off', type=boolean_string, default=False)
     args = parser.parse_args()
     params = vars(args)
 
@@ -94,6 +99,8 @@ def run_test(benchmark):
         spilled_size += size
 
         print(ray_time, num, size)
+        if debugging:
+            ray.timeline('/tmp/ray/timeline.json')
         ray.shutdown()
 
     if not debugging:

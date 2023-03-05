@@ -13,16 +13,20 @@ then
 	sudo mkdir $RAY_SPILL_DIR
 fi
 
+MOUNT_DEV=/dev/nvme1n1
+
+test -b $MOUNT_DEV  || MOUNT_DEV=/dev/sdb
+test -b $MOUNT_DEV  || (echo "Unknown Device, Stop mounting" && exit)
 
 sudo umount $RAY_SPILL_DIR
-sudo mkfs.ext4 /dev/nvme1n1
-sudo mount -t ext4 /dev/nvme1n1 $RAY_SPILL_DIR
+sudo mkfs.ext4 $MOUNT_DEV 
+sudo mount -t ext4 $MOUNT_DEV $RAY_SPILL_DIR
 
 # Setting env variable
 sudo chown $USER $RAY_SPILL_DIR 
 if !(grep $RAY_SPILL_DIR /etc/fstab);
 then
-	echo "/dev/nvme1n1 ${RAY_SPILL_DIR} auto noatime 0 0" | sudo tee -a /etc/fstab
+	echo "${MOUNT_DEV} ${RAY_SPILL_DIR} auto noatime 0 0" | sudo tee -a /etc/fstab
 fi
 if !(grep $RAY_SPILL_DIR ~/.bashrc);
 then
