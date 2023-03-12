@@ -32,5 +32,5 @@ if !(grep $RAY_SPILL_DIR ~/.bashrc);
 then
 	echo "export RAY_SPILL_DIR='${RAY_SPILL_DIR}'" | tee -a ~/.bashrc
 	echo "${PWD}/mount_local_storage_instance.sh" | tee -a ~/.bashrc
-	source ~/.bashrc
 fi
+source ~/.bashrc
