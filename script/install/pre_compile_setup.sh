@@ -41,6 +41,7 @@ wget https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh
 chmod +x install.sh
 ./install.sh
 rm install.sh
+source ~/.bashrc
 #need to reopen the terminal
 nvm install 14
 nvm use 14
@@ -67,4 +68,6 @@ git clone https://github.com/ray-project/ray.git
 mv ray production_ray
 cd production_ray
 git checkout releases/2.2.0
+cd python/ray/dashboard/client
+npm install && npm ci && npm run build
 popd
