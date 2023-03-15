@@ -29,6 +29,7 @@ def get_params():
     parser.add_argument('--SEED', '-s', type=int, default=0)
     parser.add_argument('--LATENCY', '-l', type=float, default=0)
     parser.add_argument('--OFFLINE', '-off', type=boolean_string, default=False)
+    parser.add_argument('--MULTI_NODE', '-m', type=boolean_string, default=False)
     args = parser.parse_args()
     params = vars(args)
 
@@ -72,6 +73,7 @@ def run_test(benchmark):
     RESULT_PATH = params['RESULT_PATH']
     NUM_TRIAL = params['NUM_TRIAL']
     NUM_WORKER = params['NUM_WORKER']
+    MULTI_NODE = params['MULTI_NODE']
     OBJECT_STORE_BUFFER_SIZE = 50_000_000 #this value is to add some space in ObjS for nprand metadata and ray object metadata
 
     debugging = False
@@ -83,12 +85,15 @@ def run_test(benchmark):
         debugging = True
 
     for i in range(NUM_TRIAL):
-        spill_dir = os.getenv('RAY_SPILL_DIR')
-        if spill_dir:
-            ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
-                                    "params": {"directory_path": spill_dir}},)}, num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
+        if MULTI_NODE:
+            ray.init()
         else:
-            ray.init(num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
+            spill_dir = os.getenv('RAY_SPILL_DIR')
+            if spill_dir:
+                ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
+                                        "params": {"directory_path": spill_dir}},)}, num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
+            else:
+                ray.init(num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
 
         if not debugging:
             warmup(OBJECT_STORE_SIZE)
