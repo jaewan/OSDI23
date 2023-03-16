@@ -5,7 +5,7 @@ DEBUG=true
 ################ System Variables ################ 
 APPLICATION=pipeline
 LOG_DIR=../data/$APPLICATION/
-TEST_FILE=../microbench/instantSubmission/$APPLICATION.py
+TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
 OBJECT_STORE_SIZE=4000000000
 OBJECT_SIZE=100000000
 NUM_CPUS=32
@@ -20,7 +20,7 @@ DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
 DFS_BACKPRESSURE_BLOCKSPILL=false
 DFS_EAGERSPILL=false
-MULTI_NODE=false
+MULTI_NODE=true
 
 function Test()
 {
@@ -30,40 +30,45 @@ function Test()
 	EAGERSPILL=$4
 	OFF=$5
 	RESULT_FILE=$LOG_DIR$6.csv
+	NUM_TRIAL=1
+
+	export RAY_worker_lease_timeout_milliseconds=0
+	export RAY_worker_cap_enabled=false 
+	export RAY_block_tasks_threshold=1.0 
+	export RAY_object_spilling_threshold=1.0 
+	export RAY_enable_Deadlock2=$BLOCKSPILL
+	export RAY_enable_BlockTasks=$BACKPRESSURE
+	export RAY_enable_EvictTasks=$EVICT
+	export RAY_enable_BlockTasksSpill=$BLOCKSPILL
+	export RAY_enable_EagerSpill=$EAGERSPILL
+
 	if $DEBUG;
 	then
-		#for w in {1,2,4,8}
-		#do
-		w=2
-			let a=20000
-			echo $6 -w $w 
-			RAY_worker_lease_timeout_milliseconds=0 RAY_worker_cap_enabled=false \
-			RAY_PROFILING=1\
-			RAY_BACKEND_LOG_LEVEL=debug \
-			RAY_block_tasks_threshold=1.0 RAY_object_spilling_threshold=1.0 RAY_spill_wait_time=$a RAY_enable_Deadlock2=true \
-			RAY_enable_BlockTasks=$BACKPRESSURE  RAY_enable_EvictTasks=$EVICT RAY_enable_BlockTasksSpill=$BLOCKSPILL RAY_enable_EagerSpill=$EAGERSPILL\
-			python $TEST_FILE -w $w -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t 1 -nw 32 -m $MULTI_NODE
-		#done
+		export RAY_BACKEND_LOG_LEVEL=debug
+		RESULT_FILE='~/OSDI/data/dummy.csv'
 	else
+		NUM_TRIAL=5
 		test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "std,var,working_set,object_store_size,object_size,time,num_spill_objs,spilled_size" >>$RESULT_FILE
-		for w in {1,2,4,8}
-		do
-			let a=50000
-			echo $6 -w $w 
-			RAY_worker_lease_timeout_milliseconds=0 RAY_worker_cap_enabled=false \
-			RAY_block_tasks_threshold=1.0 RAY_object_spilling_threshold=1.0 RAY_spill_wait_time=$a RAY_enable_Deadlock2=$BLOCKSPILL \
-			RAY_enable_BlockTasks=$BACKPRESSURE  RAY_enable_EvictTasks=$EVICT RAY_enable_BlockTasksSpill=$BLOCKSPILL RAY_enable_EagerSpill=$EAGERSPILL\
-			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE  -off $OFF -t 5 -nw 32 -m $MULTI_NODE
-		done
-		rm -rf /tmp/ray/*
 	fi
+	for w in {1,2,4,8}
+	do
+		if $MULTI_NODE;
+		then
+			for ((n=0;n<$NUM_TRIAL;n++))
+			do
+				python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
+				ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
+					~/OSDI23/script/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_SIZE $OFF $MULTI_NODE 
+				python multinode/wake_worker_node.py -s true
+				ray stop
+			done
+		else
+			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw 32 -m $MULTI_NODE
+		fi
+		rm -rf /tmp/ray/*
+	done
 }
-
-if $MULTI_NODE;
-then
-	python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE
-fi
 
 if $Production_RAY;
 then
@@ -74,6 +79,7 @@ fi
 if $DFS;
 then
 	#./../script/install/install_boa.sh
+	rm -rf /tmp/ray
 	Test false false false false false DFS
 fi
 

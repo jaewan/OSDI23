@@ -22,7 +22,7 @@ def get_params():
     parser.add_argument('--WORKING_SET_RATIO', '-w', type=int, default=1)
     parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=4_000_000_000)
     parser.add_argument('--OBJECT_SIZE', '-os', type=int, default=100_000_000)
-    parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
+    parser.add_argument('--RESULT_PATH', '-r', type=str, default="~/OSDI/data/dummy.csv")
     parser.add_argument('--NUM_TRIAL', '-t', type=int, default=1)
     parser.add_argument('--NUM_STAGES', '-ns', type=int, default=1)
     parser.add_argument('--NUM_WORKER', '-nw', type=int, default=32)
@@ -86,7 +86,10 @@ def run_test(benchmark):
 
     for i in range(NUM_TRIAL):
         if MULTI_NODE:
+            #ray.init(address="10.138.0.5:6379")
+            #ray.init(address='auto')
             ray.init()
+            #print("Let us Go!")
         else:
             spill_dir = os.getenv('RAY_SPILL_DIR')
             if spill_dir:
