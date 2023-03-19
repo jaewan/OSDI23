@@ -3,9 +3,11 @@ import pickle
 import argparse
 import os
 
+################ Node Info ################ 
 PORT=6380
-Worker_Addresses = ['34.82.222.146']
+Worker_Addresses = ['34.105.71.214']
 
+################ Get Ray Env Variables ################ 
 def boolean_string(s):
     if s not in {'False', 'True', 'false', 'true'}:
         raise ValueError('Not a valid boolean string')
@@ -31,6 +33,7 @@ backpressure = params['BACKPRESSURE']
 blockspill = params['BLOCKSPILL']
 eagerspill = params['EAGERSPILL']
 
+################ Connect to Worker Nodes ################ 
 if not stop and not shutdown:
     os.system('~/OSDI23/script/multinode/up.sh -n ' + num_cpus + ' -o ' + object_store_size)
 
