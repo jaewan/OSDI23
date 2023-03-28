@@ -6,9 +6,9 @@ DEBUG=true
 APPLICATION=pipeline
 LOG_DIR=../data/$APPLICATION/
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=4000000000
-OBJECT_SIZE=100000000
-NUM_CPUS=32
+OBJECT_STORE_SIZE=16000000000
+OBJECT_SIZE=400000000
+NUM_CPUS=8
 
 ################ Test Techniques ################ 
 Production_RAY=false
@@ -51,23 +51,25 @@ function Test()
 		test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "std,var,working_set,object_store_size,object_size,time,num_spill_objs,spilled_size" >>$RESULT_FILE
 	fi
-	for w in {1,2,4,8}
-	do
+	#for w in {1,2,4,8}
+	#do
+	w=8
+	echo $APPLICATION $w
 		if $MULTI_NODE;
 		then
 			for ((n=0;n<$NUM_TRIAL;n++))
 			do
 				python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
 				ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
-					~/OSDI23/script/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_SIZE $OFF $MULTI_NODE 
+					~/OSDI23/script/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE 
 				python multinode/wake_worker_node.py -s true
 				ray stop
 			done
 		else
 			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw 32 -m $MULTI_NODE
 		fi
-		rm -rf /tmp/ray/*
-	done
+		#rm -rf /tmp/ray/*
+	#done
 }
 
 if $Production_RAY;
