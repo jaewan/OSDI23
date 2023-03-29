@@ -2,10 +2,13 @@
 
 ################ System Variables ################ 
 PORT=6379
-HEAD=true
 HEAD_ADDR=104.199.120.75
 NUM_CPUS=16
 OBJECT_STORE_MEMORY_SIZE=2000000000
+HEAD=false
+if [[ "$HOSTNAME" == *"head"* ]]; then
+	HEAD=true
+fi
 
 while getopts n:o: flag
 do
