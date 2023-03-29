@@ -42,14 +42,16 @@ def pipeline():
         time.sleep(LATENCY)
         return np.zeros(OBJECT_SIZE // 8)
 
-    @ray.remote(num_cpus=1) 
-    def starter(): 
-        return True
         
     ray_pipeline_begin = perf_counter()
 
-    #a = starter.remote()
     num_fill_object_store = (OBJECT_STORE_SIZE//OBJECT_SIZE)//NUM_STAGES
+
+    print("Object store size",OBJECT_STORE_SIZE)
+    print("Object size",OBJECT_SIZE)
+    print("Working set ratio is", WORKING_SET_RATIO)
+    print("Submitting ", WORKING_SET_RATIO*num_fill_object_store)
+
     refs = [[] for _ in range(NUM_STAGES)]
     for _ in range(WORKING_SET_RATIO*num_fill_object_store):
         refs[0].append(producer.remote())
@@ -113,7 +115,9 @@ def offline_pipeline():
             #del r
 
         del refs[0]
-        ray.get(res)
+        for r in res:
+            ray.get(r)
+        #ray.get(res)
 
     baseline_end = perf_counter()
     return baseline_end - baseline_start
