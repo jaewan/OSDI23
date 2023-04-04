@@ -53,6 +53,11 @@ def warmup(OBJECT_STORE_SIZE):
 
 def get_num_spilled_objs():
     os.system('ray memory --stats-only > /tmp/ray/spilllog')
+    migration_count = 0
+    if os.path.isfile("/tmp/ray/migration_count"):
+        with open("/tmp/ray/migration_count", 'r') as file:
+            for line in file:
+                migration_count = int(line)
     with open("/tmp/ray/spilllog", 'r') as file:
         lines = file.readlines()
 
@@ -64,7 +69,7 @@ def get_num_spilled_objs():
                 idx = line.index('Spilled')
                 num += int(line[idx+3])
                 size += int(line[idx+1])
-        return num,size
+        return num,size,migration_count
 
 def run_test(benchmark):
     OBJECT_STORE_SIZE = params['OBJECT_STORE_SIZE'] 
@@ -80,6 +85,7 @@ def run_test(benchmark):
     ray_time = []
     num_spilled_objs = 0
     spilled_size = 0
+    migration_counts = 0
 
     if 'dummy' in RESULT_PATH:
         debugging = True
@@ -102,17 +108,19 @@ def run_test(benchmark):
             warmup(OBJECT_STORE_SIZE)
 
         ray_time.append(benchmark())
-        num,size = get_num_spilled_objs()
+        num,size,migration_count = get_num_spilled_objs()
         num_spilled_objs += num
         spilled_size += size
+        migration_counts += migration_count
 
-        print(ray_time, num, size)
+        print(ray_time, num, size, migration_count)
         if debugging:
             ray.timeline('/tmp/ray/timeline.json')
         ray.shutdown()
 
     if not debugging:
-        data = [np.std(ray_time), np.var(ray_time), WORKING_SET_RATIO, OBJECT_STORE_SIZE, OBJECT_SIZE, sum(ray_time)/NUM_TRIAL, num_spilled_objs//NUM_TRIAL, spilled_size//NUM_TRIAL]
+        data = [sum(ray_time)/NUM_TRIAL, num_spilled_objs//NUM_TRIAL, spilled_size//NUM_TRIAL, migration_counts//NUM_TRIAL,
+                WORKING_SET_RATIO, OBJECT_STORE_SIZE, OBJECT_SIZE, np.std(ray_time), np.var(ray_time)]
         with open(RESULT_PATH, 'a', encoding='UTF-8', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(data)

@@ -45,6 +45,7 @@ source ~/.bashrc
 #need to reopen the terminal
 nvm install 14
 nvm use 14
+rm bazel-5.3.2-installer-linux-x86_64.sh
 
 #install bazel
 echo "Install Bazel"

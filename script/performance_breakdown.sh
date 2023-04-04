@@ -3,12 +3,12 @@
 DEBUG=true
 
 ################ System Variables ################ 
-APPLICATION=pipeline
-LOG_DIR=../data/$APPLICATION/
+APPLICATION=_pipeline
+LOG_DIR=~/OSDI23/data/$APPLICATION/
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
 OBJECT_STORE_SIZE=16000000000
 OBJECT_SIZE=400000000
-NUM_CPUS=8
+NUM_CPUS=22
 
 ################ Test Techniques ################ 
 Production_RAY=false
@@ -48,8 +48,8 @@ function Test()
 		RESULT_FILE='~/OSDI/data/dummy.csv'
 	else
 		NUM_TRIAL=5
-		test -f "$RESULT_FILE" && rm $RESULT_FILE
-		echo "std,var,working_set,object_store_size,object_size,time,num_spill_objs,spilled_size" >>$RESULT_FILE
+		#test -f "$RESULT_FILE" && rm $RESULT_FILE
+		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
 	fi
 	#for w in {1,2,4,8}
 	#do
@@ -74,7 +74,7 @@ function Test()
 
 if $Production_RAY;
 then
-	./../script/install/install_production_ray.sh
+	#./../script/install/install_production_ray.sh
 	Test false false false false false RAY
 fi
 
