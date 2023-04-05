@@ -3,7 +3,7 @@
 DEBUG=true
 
 ################ System Variables ################ 
-APPLICATION=_pipeline
+APPLICATION=pipeline
 LOG_DIR=~/OSDI23/data/$APPLICATION/
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
 OBJECT_STORE_SIZE=16000000000
@@ -61,12 +61,12 @@ function Test()
 			do
 				python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
 				ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
-					~/OSDI23/script/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE 
+					~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE 
 				python multinode/wake_worker_node.py -s true
 				ray stop
 			done
 		else
-			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw 32 -m $MULTI_NODE
+			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw $NUM_CPUS -m $MULTI_NODE
 		fi
 		#rm -rf /tmp/ray/*
 	#done

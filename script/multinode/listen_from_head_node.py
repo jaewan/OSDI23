@@ -9,6 +9,25 @@ os.environ['RAY_worker_cap_enabled']=False
 
 PORT=6380
 
+def push_based_shuffle_setup(scheduling_level):
+    username = os.getlogin()
+    PRODUCTION_DIR = '/home/'+username+'/production_ray/python/ray/data/_internal'
+    BOA_DIR = '/home/'+username+'/ray_memory_management/python/ray/data/_internal'
+    shuffle_file = '/home/'+username+'OSDI23/macrobench/code/'
+
+    if scheduling_level == 0:
+        shuffle_file += "application_scheduling/push_based_shuffle.py"
+    else if scheduling_level == 1:
+        shuffle_file += "application_scheduling_off_ver1/push_based_shuffle.py"
+    else if scheduling_level == 2:
+        shuffle_file += "application_scheduling_off_ver2/push_based_shuffle.py"
+    else
+        return
+
+    shutil.copy(shuffle_file, BOA_DIR)
+    shutil.copy(shuffle_file, PRODUCTION_DIR)
+
+
 serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serv.bind(('0.0.0.0', PORT))
 serv.listen(1)
@@ -34,6 +53,7 @@ while True:
                   str(data_dict['BLOCKSPILL']) + ' RAY_enable_Deadlock2=' + str(data_dict['BLOCKSPILL']) +
                   ' RAY_enable_EagerSpill=' + str(data_dict['EAGERSPILL']) +
                   ' ./up.sh -n ' + data_dict['num_cpus'] + ' -o ' + data_dict['obj_store_size'])
+        push_based_shuffle_setup(data_dict[push_based_shuffle_app_scheduling_level])
         return_str += " Ray Up"
     conn.send(return_str.encode())
   conn.close()

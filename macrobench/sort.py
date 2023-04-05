@@ -111,6 +111,11 @@ def store_results(memory_stats, res_str, result_path):
         writer.writerow(data)
 
 
+def boolean_string(s):
+    if s not in {'False', 'True', 'false', 'true'}:
+        raise ValueError('Not a valid boolean string')
+    return (s == 'True' or  s == 'true')
+
 
 if __name__ == "__main__":
     import argparse
@@ -132,6 +137,7 @@ if __name__ == "__main__":
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
     parser.add_argument('--NUM_WORKER', '-nw', type=int, default=16)
     parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=9_000_000_000)
+    parser.add_argument('--MULTI_NODE', '-m', type=boolean_string, default=False)
 
     args = parser.parse_args()
 
@@ -149,14 +155,13 @@ if __name__ == "__main__":
 
     result_path = args.RESULT_PATH
     spill_dir = os.getenv('RAY_SPILL_DIR')
-    if spill_dir:
+    if args.MULTI_NODE or not spill_dir:
+        ray.init()
+        print("Ray default init")
+    else:
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",
                                     "params": {"directory_path": spill_dir}},)})#, num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
         print("Ray spill dir set")
-    else:
-        #ray.init(num_cpus=NUM_WORKERS, object_store_memory=OBJECT_STORE_SIZE)
-        ray.init()
-        print("Ray default init")
 
     num_partitions = int(args.num_partitions)
     partition_size = int(float(args.partition_size))

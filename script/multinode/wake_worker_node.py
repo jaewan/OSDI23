@@ -5,7 +5,7 @@ import os
 
 ################ Node Info ################ 
 PORT=6380
-Worker_Addresses = ['34.105.71.214']
+Worker_Addresses = ['34.72.30.152']
 
 ################ Get Ray Env Variables ################ 
 def boolean_string(s):
@@ -21,6 +21,7 @@ parser.add_argument('--SHUTDOWN', '-d', type=boolean_string, default=False)
 parser.add_argument('--BACKPRESSURE', '-b', type=boolean_string, default=False)
 parser.add_argument('--BLOCKSPILL', '-bs', type=boolean_string, default=False)
 parser.add_argument('--EAGERSPILL', '-e', type=boolean_string, default=False)
+parser.add_argument('--PUSH_BASED_SHUFFLE_APP_SCHEDULING_LEVEL', '-a', type=int, default=-1)
 args = parser.parse_args()
 params = vars(args)
 
@@ -32,6 +33,7 @@ shutdown = params['SHUTDOWN']
 backpressure = params['BACKPRESSURE']
 blockspill = params['BLOCKSPILL']
 eagerspill = params['EAGERSPILL']
+push_based_shuffle_app_scheduling_level = params['PUSH_BASED_SHUFFLE_APP_SCHEDULING_LEVEL']
 
 ################ Connect to Worker Nodes ################ 
 if not stop and not shutdown:
@@ -39,7 +41,9 @@ if not stop and not shutdown:
 
 data = pickle.dumps({"num_cpus":num_cpus, "stop":stop, "shutdown":shutdown, 
                      "obj_store_size": object_store_size, "BACKPRESSURE":backpressure,
-                     "BLOCKSPILL":blockspill, "EAGERSPILL":eagerspill})
+                     "BLOCKSPILL":blockspill, "EAGERSPILL":eagerspill,
+                     "push_based_shuffle_app_scheduling_level":push_based_shuffle_app_scheduling_level})
+
 for addr in Worker_Addresses:
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((addr, PORT))
