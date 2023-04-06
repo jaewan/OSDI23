@@ -17,6 +17,8 @@ NUM_CPUS=42
 NUM_PARTITION=256
 PARTITION_SIZE=5e7
 
+mkdir -p $LOG_DIR
+
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false

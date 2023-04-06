@@ -10,6 +10,8 @@ OBJECT_STORE_SIZE=16000000000
 OBJECT_SIZE=400000000
 NUM_CPUS=22
 
+mkdir -p $LOG_DIR
+
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
