@@ -1,6 +1,6 @@
 #! /bin/bash
 
-DEBUG=true
+DEBUG=false
 
 ################ Application Config ################ 
 APP_SCHEDULING=0
@@ -12,21 +12,22 @@ BASE_DIR=~/OSDI23/macrobench/
 APPLICATION=sort
 LOG_DIR=~/OSDI23/data/$APPLICATION/
 TEST_FILE=$BASE_DIR$APPLICATION.py
-OBJECT_STORE_SIZE=16000000000
-NUM_CPUS=22
-NUM_PARTITION=64
+OBJECT_STORE_SIZE=42000000000
+NUM_CPUS=42
+NUM_PARTITION=256
 PARTITION_SIZE=5e7
 
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
-DFS=true
+DFS=false
 DFS_EVICT=false
-DFS_BACKPRESSURE=false
-DFS_BLOCKSPILL=false
+DFS_BACKPRESSURE=true
+DFS_BLOCKSPILL=true
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=false
-DFS_EAGERSPILL=false
+DFS_BACKPRESSURE_BLOCKSPILL=true
+DFS_EAGERSPILL=true
+COMPLETE_BOA=true
 MULTI_NODE=true
 
 function SetUp()
@@ -155,6 +156,13 @@ then
 	SetUp true
 	echo "Running [BOA-DFS-Eagerspill Ray] with Application-level Scheduling: $APP_SCHEDULING"
  	Test false false false true EagerSpill
+fi
+
+if $COMPLETE_BOA;
+then
+	SetUp true
+	echo "Running [BOA-Everything Ray] with Application-level Scheduling: $APP_SCHEDULING"
+ 	Test true true false true BOA
 fi
 
 ################ Plot Graph ################ 
