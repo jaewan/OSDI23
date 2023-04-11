@@ -106,7 +106,7 @@ def store_results(memory_stats, res_str, result_path):
     words = res_str[res_str.index("executed")+1:].split()
     idx = words.index("executed")
     runtime = words[idx+2]
-    data = [runtime[:-1], spilled_amount, spilled_objects, write_throughput, restored_amount, restored_objects, read_throughput, migration_count]
+    data = [runtime[:-1], spilled_amount, migration_count, spilled_objects, write_throughput, restored_amount, restored_objects, read_throughput, num_partitions, partition_size]
 
     # Write the results as a csv file. The format is defined in run script
     with open(result_path, 'a', encoding='UTF-8', newline='') as f:

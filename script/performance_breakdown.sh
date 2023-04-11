@@ -37,7 +37,7 @@ function Test()
 	EAGERSPILL=$4
 	OFF=$5
 	RESULT_FILE=$LOG_DIR$6.csv
-	NUM_TRIAL=1
+	NUM_TRIAL=5
 
 	export RAY_worker_lease_timeout_milliseconds=0
 	export RAY_worker_cap_enabled=false 

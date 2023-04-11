@@ -5,7 +5,7 @@ import os
 
 ################ Node Info ################ 
 PORT=6380
-Worker_Addresses = ['34.66.186.174']
+Worker_Addresses = ['35.224.39.54']
 
 ################ Get Ray Env Variables ################ 
 def boolean_string(s):

@@ -1,9 +1,9 @@
 #! /bin/bash
 
-DEBUG=false
+DEBUG=true
 
 ################ Application Config ################ 
-APP_SCHEDULING=0
+APP_SCHEDULING=2
 PRODUCTION_DIR=~/production_ray/python/ray/
 BOA_DIR=~/ray_memory_management/python/ray
 BASE_DIR=~/OSDI23/macrobench/
@@ -20,15 +20,15 @@ PARTITION_SIZE=1e8
 mkdir -p $LOG_DIR
 
 ################ Test Techniques ################ 
-Production_RAY=false
-DFS=true
+Production_RAY=true
+DFS=false
 DFS_EVICT=false
 DFS_BACKPRESSURE=false
 DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
 DFS_BACKPRESSURE_BLOCKSPILL=false
-DFS_EAGERSPILL=true
-COMPLETE_BOA=true
+DFS_EAGERSPILL=false
+COMPLETE_BOA=false
 MULTI_NODE=true
 
 function SetUp()
@@ -66,7 +66,7 @@ function Test()
 	BLOCKSPILL=$2
 	EVICT=$3
 	EAGERSPILL=$4
-	RESULT_FILE=$LOG_DIR$5.csv
+	RESULT_PATH=$LOG_DIR$5$APP_SCHEDULING.csv
 	NUM_TRIAL=1
 
 	export RAY_worker_lease_timeout_milliseconds=0
@@ -83,11 +83,11 @@ function Test()
 	then
 		rm /tmp/ray/*log
 		export RAY_BACKEND_LOG_LEVEL=debug
-		RESULT_FILE='~/OSDI/data/dummy.csv'
+		RESULT_PATH='~/OSDI/data/dummy.csv'
 	else
-		NUM_TRIAL=1
-		#test -f "$RESULT_FILE" && rm $RESULT_FILE
-		echo "runtime,spilled_amount,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput,migration_count" >> $RESULT_PATH
+		NUM_TRIAL=5
+		#test -f "$RESULT_PATH" && rm $RESULT_PATH
+		echo "runtime,spilled_amount,migration_count,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput,num_partitions,partition_size" >> $RESULT_PATH
 	fi
 	echo $APPLICATION
 	if $MULTI_NODE;
@@ -96,12 +96,12 @@ function Test()
 		do
 			python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL -a $APP_SCHEDULING
 			ray job submit --working-dir $BASE_DIR \
-				~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $RESULT_FILE $MULTI_NODE $NUM_PARTITION $PARTITION_SIZE
+				~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $RESULT_PATH $MULTI_NODE $NUM_PARTITION $PARTITION_SIZE
 			python multinode/wake_worker_node.py -s true
 			ray stop
 		done
 	else
-		python $TEST_FILE -r $RESULT_FILE -o $OBJECT_STORE_SIZE -nw $NUM_CPUS -m $MULTI_NODE \
+		python $TEST_FILE -r $RESULT_PATH -o $OBJECT_STORE_SIZE -nw $NUM_CPUS -m $MULTI_NODE \
 		--num-partitions=$NUM_PARTITION --partition-size=$PARTITION_SIZE 
 	fi
 	#rm -rf /tmp/ray/*
