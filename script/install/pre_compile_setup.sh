@@ -45,7 +45,6 @@ source ~/.bashrc
 #need to reopen the terminal
 nvm install 14
 nvm use 14
-rm bazel-5.3.2-installer-linux-x86_64.sh
 
 #install bazel
 echo "Install Bazel"
@@ -53,26 +52,6 @@ wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-ins
 chmod +x bazel-5.3.2-installer-linux-x86_64.sh
 ./bazel-5.3.2-installer-linux-x86_64.sh --user
 export PATH="$PATH:$HOME/bin"
+rm bazel-5.3.2-installer-linux-x86_64.sh
 
-# Get Boa
-pushd  ~/
-git clone https://github.com/jaewan/ray_memory_management.git
-cd ray_memory_management
-# if this server has less memory than (core count * 2)GB, uncomment the following line
-#echo "build --local_ram_resources=HOST_RAM*.5 --local_cpu_resources=HOST_CPUS-2" | tee -a .bazelrc
-git checkout eager-spill
-cd python/ray/dashboard/client
-npm install && npm ci && npm run build
-popd
-
-# Get production Ray 2.2.0
-pushd  ~/
-git clone https://github.com/ray-project/ray.git
-mv ray production_ray
-cd production_ray
-# if this server has less memory than (core count * 2)GB, uncomment the following line
-#echo "build --local_ram_resources=HOST_RAM*.5 --local_cpu_resources=HOST_CPUS-2" | tee -a .bazelrc
-git checkout releases/2.2.0
-cd python/ray/dashboard/client
-npm install && npm ci && npm run build
-popd
+echo "Restart Terminal and run after_restart.sh"
