@@ -17,6 +17,10 @@ from ray.data.block import Block, BlockMetadata
 from ray.data.context import DatasetContext
 from ray.data.datasource import Datasource, ReadTask
 
+import sys
+sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/microbench/instantSubmission/')
+from common import get_num_spilled_objs
+
 class RandomIntRowDatasource(Datasource[ArrowRow]):
     """An example datasource that generates rows with random int64 columns.
 
@@ -71,6 +75,9 @@ class RandomIntRowDatasource(Datasource[ArrowRow]):
         return read_tasks
 
 def store_results(memory_stats, res_str, result_path):
+    num,size,migration_count = get_num_spilled_objs()
+    print("Spilled Amount:", size)
+    print("Migration Count:", migration_count)
     if 'dummy' in result_path:
         return
 
@@ -99,7 +106,7 @@ def store_results(memory_stats, res_str, result_path):
     words = res_str[res_str.index("executed")+1:].split()
     idx = words.index("executed")
     runtime = words[idx+2]
-    data = [runtime[:-1], spilled_amount, spilled_objects, write_throughput, restored_amount, restored_objects, read_throughput]
+    data = [runtime[:-1], spilled_amount, spilled_objects, write_throughput, restored_amount, restored_objects, read_throughput, migration_count]
 
     # Write the results as a csv file. The format is defined in run script
     with open(result_path, 'a', encoding='UTF-8', newline='') as f:

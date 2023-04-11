@@ -1,28 +1,33 @@
 #! /bin/bash
 
-DEBUG=true
-
-################ System Variables ################ 
-APPLICATION=pipeline
-LOG_DIR=~/OSDI23/data/$APPLICATION/
-TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=16000000000
-OBJECT_SIZE=400000000
-NUM_CPUS=22
-
-mkdir -p $LOG_DIR
+DEBUG=false
 
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
 DFS=true
 DFS_EVICT=false
-DFS_BACKPRESSURE=false
-DFS_BLOCKSPILL=false
+DFS_BACKPRESSURE=true
+DFS_BLOCKSPILL=true
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=false
-DFS_EAGERSPILL=false
+DFS_BACKPRESSURE_BLOCKSPILL=true
+DFS_EAGERSPILL=true
+COMPLETE_BOA=true
 MULTI_NODE=true
+
+################ System Variables ################ 
+APPLICATION=pipeline
+LOG_DIR=~/OSDI23/data/single_node/$APPLICATION/
+if $MULTI_NODE;
+then
+	LOG_DIR=~/OSDI23/data/$APPLICATION/
+fi
+TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
+OBJECT_STORE_SIZE=32000000000
+OBJECT_SIZE=400000000
+NUM_CPUS=16
+
+mkdir -p $LOG_DIR
 
 function Test()
 {
@@ -50,12 +55,11 @@ function Test()
 		RESULT_FILE='~/OSDI/data/dummy.csv'
 	else
 		NUM_TRIAL=5
-		#test -f "$RESULT_FILE" && rm $RESULT_FILE
+		test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
 	fi
-	#for w in {1,2,4,8}
-	#do
-	w=8
+	for w in {1,2,4,8}
+	do
 	echo $APPLICATION $w
 		if $MULTI_NODE;
 		then
@@ -70,8 +74,8 @@ function Test()
 		else
 			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw $NUM_CPUS -m $MULTI_NODE
 		fi
-		#rm -rf /tmp/ray/*
-	#done
+		rm -rf /tmp/ray/*
+	done
 }
 
 if $Production_RAY;
@@ -122,6 +126,10 @@ then
  	Test false false false true false EagerSpill
 fi
 
+if $COMPLETE_BOA;
+then
+ 	Test true true false true false BOA
+fi
 ################ Plot Graph ################ 
 <<comment
 if ! $DEBUG;

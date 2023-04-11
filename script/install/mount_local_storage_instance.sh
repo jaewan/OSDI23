@@ -24,12 +24,15 @@ fi
 
 MOUNT_DEV=/dev/nvme1n1
 
-test -b $MOUNT_DEV  || MOUNT_DEV=/dev/sdb
+#test -b $MOUNT_DEV  || MOUNT_DEV=/dev/sdb
+test -b $MOUNT_DEV  || MOUNT_DEV=/dev/nvme0n1
 test -b $MOUNT_DEV  || { echo "Unknown Device, Stop mounting" ; exit 0;}
 
 sudo umount $RAY_SPILL_DIR
 sudo mkfs.ext4 $MOUNT_DEV
 sudo mount -t ext4 $MOUNT_DEV $RAY_SPILL_DIR
+
+source ~/.bashrc
 
 if !(grep $RAY_SPILL_DIR /etc/fstab);
 then

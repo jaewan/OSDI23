@@ -12,22 +12,21 @@ BASE_DIR=~/OSDI23/macrobench/
 APPLICATION=sort
 LOG_DIR=~/OSDI23/data/$APPLICATION/
 TEST_FILE=$BASE_DIR$APPLICATION.py
-OBJECT_STORE_SIZE=42000000000
-NUM_CPUS=42
-NUM_PARTITION=256
-PARTITION_SIZE=5e7
+OBJECT_STORE_SIZE=30000000000
+NUM_CPUS=30
+NUM_PARTITION=128
+PARTITION_SIZE=1e8
 
 mkdir -p $LOG_DIR
 
 ################ Test Techniques ################ 
 Production_RAY=false
-OFFLINE=false
-DFS=false
+DFS=true
 DFS_EVICT=false
-DFS_BACKPRESSURE=true
-DFS_BLOCKSPILL=true
+DFS_BACKPRESSURE=false
+DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=true
+DFS_BACKPRESSURE_BLOCKSPILL=false
 DFS_EAGERSPILL=true
 COMPLETE_BOA=true
 MULTI_NODE=true
@@ -86,9 +85,9 @@ function Test()
 		export RAY_BACKEND_LOG_LEVEL=debug
 		RESULT_FILE='~/OSDI/data/dummy.csv'
 	else
-		NUM_TRIAL=5
+		NUM_TRIAL=1
 		#test -f "$RESULT_FILE" && rm $RESULT_FILE
-		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
+		echo "runtime,spilled_amount,spilled_objects,write_throughput,restored_amount,restored_objects,read_throughput,migration_count" >> $RESULT_PATH
 	fi
 	echo $APPLICATION
 	if $MULTI_NODE;
