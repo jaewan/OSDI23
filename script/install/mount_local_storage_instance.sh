@@ -31,6 +31,7 @@ test -b $MOUNT_DEV  || { echo "Unknown Device, Stop mounting" ; exit 0;}
 sudo umount $RAY_SPILL_DIR
 sudo mkfs.ext4 $MOUNT_DEV
 sudo mount -t ext4 $MOUNT_DEV $RAY_SPILL_DIR
+sudo chown $USER $RAY_SPILL_DIR
 
 source ~/.bashrc
 
