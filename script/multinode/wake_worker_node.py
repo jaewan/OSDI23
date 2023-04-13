@@ -2,10 +2,10 @@ import socket
 import pickle
 import argparse
 import os
+import node_info
 
-################ Node Info ################ 
-PORT=6380
-Worker_Addresses = ['35.224.39.54']
+PORT = node_info.PORT
+Worker_Addresses = node_info.Worker_Addresses
 
 ################ Get Ray Env Variables ################ 
 def boolean_string(s):
@@ -44,10 +44,15 @@ data = pickle.dumps({"num_cpus":num_cpus, "stop":stop, "shutdown":shutdown,
                      "BLOCKSPILL":blockspill, "EAGERSPILL":eagerspill,
                      "push_based_shuffle_app_scheduling_level":push_based_shuffle_app_scheduling_level})
 
+clients = []
 for addr in Worker_Addresses:
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((addr, PORT))
     client.send(data)
+    clients.append(client)
+
+for client in clients:
     from_server = client.recv(4096)
     client.close()
     print (from_server.decode())
+

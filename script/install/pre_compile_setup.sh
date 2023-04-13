@@ -35,6 +35,12 @@ pip install prometheus_client
 pip install gpustat
 pip install aiohttp_cors
 
+#Video Processong
+pip install botocore
+pip install boto3
+sudo apt install libgl1
+pip install opencv-python-headless
+
 #Nodejs
 echo "Install Nodejs"
 wget https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh

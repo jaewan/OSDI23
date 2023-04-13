@@ -2,13 +2,14 @@ import socket
 import pickle
 import os
 import shutil
+import node_info
 
 os.environ['RAY_worker_lease_timeout_milliseconds']='0'
 os.environ['RAY_object_spilling_threshold']='1.0'
 os.environ['RAY_block_tasks_threshold']='1.0'
 os.environ['RAY_worker_cap_enabled']='False'
 
-PORT=6380
+PORT = node_info.PORT
 
 def push_based_shuffle_setup(scheduling_level):
     username = os.getlogin()
@@ -28,6 +29,13 @@ def push_based_shuffle_setup(scheduling_level):
     shutil.copy(shuffle_file, BOA_DIR)
     shutil.copy(shuffle_file, PRODUCTION_DIR)
 
+def read_migration_count():
+    migration_count = '0'
+    if os.path.isfile("/tmp/ray/migration_count"):
+        with open("/tmp/ray/migration_count") as file:
+            for line in file:
+                migration_count = line
+    return migration_count
 
 serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serv.bind(('0.0.0.0', PORT))
@@ -47,7 +55,7 @@ while True:
         quit()
     if data_dict['stop']:
         os.system('ray stop')
-        return_str += " Ray Stop"
+        return_str=read_migration_count()
     else:
         #RAY_BACKEND_LOG_LEVEL=debug 
         os.system('RAY_enable_BlockTasks='+ str(data_dict['BACKPRESSURE']) + ' RAY_enable_BlockTasksSpill=' +

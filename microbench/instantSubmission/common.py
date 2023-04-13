@@ -52,24 +52,30 @@ def warmup(OBJECT_STORE_SIZE):
     time.sleep(1)
 
 def get_num_spilled_objs():
+    import sys
+    sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/script/multinode/')
+    from gather_migration_count import get_migration_count_from_remote
+
     os.system('ray memory --stats-only > /tmp/ray/spilllog')
     migration_count = 0
+    num = 0
+    size = 0
     if os.path.isfile("/tmp/ray/migration_count"):
         with open("/tmp/ray/migration_count", 'r') as file:
             for line in file:
                 migration_count = int(line)
     with open("/tmp/ray/spilllog", 'r') as file:
         lines = file.readlines()
-
-        num = 0
-        size = 0
         for line in lines:
             if line.find("Spilled") != -1:
                 line = line.split()
                 idx = line.index('Spilled')
                 num += int(line[idx+3])
                 size += int(line[idx+1])
-        return num,size,migration_count
+    num_workers, remote_migration_count = get_migration_count_from_remote()
+    migration_count += remote_migration_count
+    migration_count/=(num_workers + 1)
+    return num,size,migration_count
 
 def run_test(benchmark):
     OBJECT_STORE_SIZE = params['OBJECT_STORE_SIZE'] 
