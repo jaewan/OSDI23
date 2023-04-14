@@ -3,7 +3,7 @@
 case "${1}" in
     *video_processing.py*)  #Video Processing
 	  echo "Submitting Video Processing"
-	  python $1 -r $2 -m $3 --num-videos=$4 --max-frames=1800 --output latency_output.txt;;
+	  python $1 -r $2 --num-videos=$3 --NUM_NODES=$4 --max-frames=1800 ;;
     *sort.py*)  #Push-based Shuffle
 	  echo "Submitting Push Based Shuffle"
 	  python $1 -r $2 -m $3 --num-partitions=$4 --partition-size=$5 ;;

@@ -5,7 +5,7 @@ import pickle
 PORT = node_info.PORT
 Worker_Addresses = node_info.Worker_Addresses
 
-data = pickle.dumps({"num_cpus":1, "stop":True, "shutdown":false, 
+data = pickle.dumps({"num_cpus":1, "stop":True, "shutdown":False, 
                      "obj_store_size": 1000_000_000, "BACKPRESSURE":False,
                      "BLOCKSPILL":False, "EAGERSPILL":False,
                      "push_based_shuffle_app_scheduling_level":-1})
@@ -24,4 +24,5 @@ def get_migration_count_from_remote():
         counts += int(from_server.decode())
         client.close()
 
+    print("Remote Migration Count", counts)
     return len(Worker_Addresses), counts

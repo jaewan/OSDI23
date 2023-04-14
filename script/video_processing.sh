@@ -1,19 +1,21 @@
 #! /bin/bash
 
-DEBUG=false
+DEBUG=true
 
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
-DFS=true
+DFS=false
 DFS_EVICT=false
-DFS_BACKPRESSURE=true
-DFS_BLOCKSPILL=true
+DFS_BACKPRESSURE=false
+DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=true
-DFS_EAGERSPILL=true
+DFS_BACKPRESSURE_BLOCKSPILL=false
+DFS_EAGERSPILL=false
 COMPLETE_BOA=true
 MULTI_NODE=true
+n=$(python multinode/get_node_count.py 2>&1)
+NUM_NODES=$(($n + 0))
 
 ################ System Variables ################ 
 APPLICATION=video_processing
@@ -22,10 +24,10 @@ if $MULTI_NODE;
 then
 	LOG_DIR=~/OSDI23/data/$APPLICATION/
 fi
-TEST_FILE=~/OSDI23/macrobench/$APPLICATION.py
-OBJECT_STORE_SIZE=32000000000
-OBJECT_SIZE=400000000
-NUM_CPUS=16
+TEST_FILE=~/OSDI23/macrobench/video-processing/$APPLICATION.py
+OBJECT_STORE_SIZE=16000000000
+NUM_VIDEOS=14
+NUM_CPUS=30
 
 mkdir -p $LOG_DIR
 
@@ -37,7 +39,7 @@ function Test()
 	EAGERSPILL=$4
 	OFF=$5
 	RESULT_FILE=$LOG_DIR$6.csv
-	NUM_TRIAL=5
+	NUM_TRIAL=1
 
 	export RAY_worker_lease_timeout_milliseconds=0
 	export RAY_worker_cap_enabled=false 
@@ -65,12 +67,12 @@ function Test()
 		do
 			python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
 			ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
-				~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE 
+				~/OSDI23/script/multinode/submit_job.sh $TEST_FILE $RESULT_FILE $NUM_VIDEOS  $NUM_NODES
 			python multinode/wake_worker_node.py -s true
 			ray stop
 		done
 	else
-		python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw $NUM_CPUS -m $MULTI_NODE
+		python $TEST_FILE -r $RESULT_FILE --num-videos=$NUM_VIDEOS --NUM_NODES=1 --max-frames=1800 --local
 	fi
 	rm -rf /tmp/ray/*
 }

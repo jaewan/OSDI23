@@ -327,11 +327,13 @@ def process_chunk(video_index, video_pathname, sink, num_frames, fps, resource, 
 
 def store_results(mean_latency, max_latency, runtime, result_path):
     import sys
+    import csv
     sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/microbench/instantSubmission/')
     from common import get_num_spilled_objs
 
     num,size,migration_count = get_num_spilled_objs()
     print("Spilled Amount:", size)
+    print("Runtime:", runtime)
     print("Migration Count:", migration_count)
     if 'dummy' in result_path:
         return
@@ -401,12 +403,12 @@ def process_videos(video_pathname, num_videos, output_filename, view,
         with open(output_filename, 'w') as f:
             for t, l in latencies:
                 f.write("{} {}\n".format(t, l))
-    else:
-        for latency in latencies:
-            print(latency)
+    #else:
+    #    for latency in latencies:
+    #        print(latency)
     latencies = [l for _, l in latencies]
     mean_latency = np.mean(latencies)
-    max_latency = np.max(latencies))
+    max_latency = np.max(latencies)
     runtime = perf_counter() - start_time
     print("Mean latency:", mean_latency)
     print("Max latency:", max_latency)
@@ -446,8 +448,9 @@ def kill_local_process(fail_at, worker_failure):
 
 
 def main(args):
-    local = args.MULTI_NODE
-    num_worker_nodes = args.num_videos
+    #num_worker_nodes = args.num_videos
+    num_nodes = args.NUM_NODES
+    num_worker_nodes = num_nodes
     num_owner_nodes = args.num_videos // args.max_owners_per_node
     if args.num_videos % args.max_owners_per_node != 0:
         num_owner_nodes += 1
@@ -458,20 +461,24 @@ def main(args):
     if num_sinks % args.max_sinks_per_node != 0:
         num_sink_nodes += 1
 
-    num_nodes = num_worker_nodes + num_owner_nodes + num_sink_nodes
+    num_owner_nodes  = min(num_owner_nodes, num_nodes)
+    num_sink_nodes = min(num_sink_nodes, num_nodes)
+
+    num_nodes -= 1
+    #num_nodes = num_worker_nodes + num_owner_nodes + num_sink_nodes
 
     import socket
     head_ip = socket.gethostbyname(socket.gethostname())
     head_node_resource = "node:{}".format(head_ip)
 
-    if local:
+    if args.local:
         ray.init(resources={head_node_resource: 1})
     else:
         #ray.init(address="auto")
         ray.init()
 
     # Assign all tasks and actors resources.
-    if local:
+    if args.local:
         worker_resources = [head_node_resource]
         owner_resources = [head_node_resource]
         sink_resources = [head_node_resource]
@@ -488,26 +495,26 @@ def main(args):
         for node in nodes:
             if not node["Alive"]:
                 continue
-            if head_node_resource in node["Resources"]:
-                continue
+            #if head_node_resource in node["Resources"]:
+                #continue
             for r in node["Resources"]:
                 if "node" in r:
                     node_resources.append(r)
 
         print("All nodes joined")
-        i = 0
+        #i = 0
         worker_resources = node_resources[:num_worker_nodes]
-        i += num_worker_nodes
-        owner_resources = node_resources[i:i + num_owner_nodes]
-        i += num_owner_nodes
-        sink_resources = node_resources[i:i + num_sink_nodes]
+        #i += num_worker_nodes
+        owner_resources = node_resources[:num_owner_nodes]
+        #i += num_owner_nodes
+        sink_resources = node_resources[-num_sink_nodes:]
 
     # Start processing at an offset from the current time to give all processes
     # time to start up.
     offset_seconds = 5
     if args.failure or args.owner_failure:
         fail_at = offset_seconds + args.fail_at_seconds
-        if local:
+        if args.local:
             t = threading.Thread(target=kill_local_process,
                     args=(fail_at, args.failure,))
         else:
@@ -527,14 +534,14 @@ def main(args):
                 fail_at, kill_script, worker_ip))
         t.start()
         process_videos(args.video_path, args.num_videos, args.output,
-                local, head_node_resource, worker_resources,
+                args.local, head_node_resource, worker_resources,
                 owner_resources, sink_resources, args.max_frames,
                 num_sinks, args.v07, args.checkpoint_interval,
                 offset_seconds)
         t.join()
     else:
         process_videos(args.video_path, args.num_videos, args.output,
-                local, head_node_resource, worker_resources,
+                args.local, head_node_resource, worker_resources,
                 owner_resources, sink_resources, args.max_frames,
                 num_sinks, args.v07, args.checkpoint_interval,
                 offset_seconds)
@@ -549,10 +556,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run the video benchmark.")
 
-    parser.add_argument('--MULTI_NODE', '-m', type=boolean_string, default=False)
     parser.add_argument('--RESULT_PATH', '-r', type=str, default="../data/dummy.csv")
+    parser.add_argument('--NUM_NODES', '-n', type=int, required=True)
     parser.add_argument("--num-videos", required=True, type=int)
-    parser.add_argument("--video-path", required=True, type=str)
+    parser.add_argument("--video-path", type=str, default="/home/jae/OSDI23/macrobench/video-processing/husky.mp4")
     parser.add_argument("--output", type=str)
     parser.add_argument("--v07", action="store_true")
     parser.add_argument("--failure", action="store_true")

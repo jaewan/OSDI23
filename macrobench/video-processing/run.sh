@@ -28,6 +28,8 @@ fi
 let num_nodes=( $num_videos + $num_owner_nodes + $num_sink_nodes )
 echo "Requesting $num_nodes nodes..."
 
+exit -1
+
 if [ $system == "leases" ] || [ $system == "centralized" ]; then
     source activate ray-0-7
     v07="--v07"

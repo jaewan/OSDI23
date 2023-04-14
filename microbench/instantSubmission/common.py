@@ -54,6 +54,7 @@ def warmup(OBJECT_STORE_SIZE):
 def get_num_spilled_objs():
     import sys
     sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/script/multinode/')
+    # This function shutsdown remote ray instance
     from gather_migration_count import get_migration_count_from_remote
 
     os.system('ray memory --stats-only > /tmp/ray/spilllog')
@@ -98,10 +99,7 @@ def run_test(benchmark):
 
     for i in range(NUM_TRIAL):
         if MULTI_NODE:
-            #ray.init(address="10.138.0.5:6379")
-            #ray.init(address='auto')
             ray.init()
-            #print("Let us Go!")
         else:
             spill_dir = os.getenv('RAY_SPILL_DIR')
             if spill_dir:
