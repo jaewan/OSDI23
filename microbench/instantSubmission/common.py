@@ -112,6 +112,7 @@ def run_test(benchmark):
             warmup(OBJECT_STORE_SIZE)
 
         ray_time.append(benchmark())
+        print("Ended")
         num,size,migration_count = get_num_spilled_objs(MULTI_NODE)
         num_spilled_objs += num
         spilled_size += size

@@ -325,13 +325,13 @@ def process_chunk(video_index, video_pathname, sink, num_frames, fps, resource, 
         next_to_send += 1
     return ray.get(final)
 
-def store_results(mean_latency, max_latency, runtime, result_path):
+def store_results(mean_latency, max_latency, runtime, result_path, is_multi_node):
     import sys
     import csv
     sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/microbench/instantSubmission/')
     from common import get_num_spilled_objs
 
-    num,size,migration_count = get_num_spilled_objs()
+    num,size,migration_count = get_num_spilled_objs(is_multi_node)
     print("Spilled Amount:", size)
     print("Runtime:", runtime)
     print("Migration Count:", migration_count)

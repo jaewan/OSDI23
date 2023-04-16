@@ -4,6 +4,7 @@ DEBUG=true
 
 ################ Test Techniques ################ 
 Production_RAY=true
+DFS=false
 DFS_EVICT=false
 DFS_BACKPRESSURE=false
 DFS_BLOCKSPILL=false
@@ -23,9 +24,9 @@ then
 	LOG_DIR=~/OSDI23/data/$APPLICATION/
 fi
 TEST_FILE=~/OSDI23/macrobench/video-processing/$APPLICATION.py
-OBJECT_STORE_SIZE=16000000000
-NUM_VIDEOS=14
-NUM_CPUS=30
+OBJECT_STORE_SIZE=2000000000
+NUM_VIDEOS=10
+NUM_CPUS=15
 
 mkdir -p $LOG_DIR
 
