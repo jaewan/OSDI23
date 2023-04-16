@@ -345,7 +345,7 @@ def store_results(mean_latency, max_latency, runtime, result_path):
 
 def process_videos(video_pathname, num_videos, output_filename, view,
         head_node_resource, worker_resources, owner_resources, sink_resources,
-        max_frames, num_sinks, v07, checkpoint_interval, offset_seconds):
+        max_frames, num_sinks, v07, checkpoint_interval, offset_seconds, is_multi_node):
     # An actor that will get signaled once the entire job is done.
     signal = Signal.options(resources={
         head_node_resource: 0.001
@@ -412,7 +412,7 @@ def process_videos(video_pathname, num_videos, output_filename, view,
     runtime = perf_counter() - start_time
     print("Mean latency:", mean_latency)
     print("Max latency:", max_latency)
-    store_results(mean_latency, max_latency, runtime, args.RESULT_PATH)
+    store_results(mean_latency, max_latency, runtime, args.RESULT_PATH, is_multi_node)
 
 def kill_node(fail_at, kill_script, worker_ip):
     start = time.time()
@@ -537,14 +537,14 @@ def main(args):
                 args.local, head_node_resource, worker_resources,
                 owner_resources, sink_resources, args.max_frames,
                 num_sinks, args.v07, args.checkpoint_interval,
-                offset_seconds)
+                offset_seconds,(num_nodes>1))
         t.join()
     else:
         process_videos(args.video_path, args.num_videos, args.output,
                 args.local, head_node_resource, worker_resources,
                 owner_resources, sink_resources, args.max_frames,
                 num_sinks, args.v07, args.checkpoint_interval,
-                offset_seconds)
+                offset_seconds, (num_nodes>1))
 
 def boolean_string(s):
     if s not in {'False', 'True', 'false', 'true'}:

@@ -22,7 +22,7 @@ then
 	source ~/.bashrc
 fi
 
-MOUNT_DEV=/dev/nvme1n1
+MOUNT_DEV=/dev/nvme1n1 # Amazon AWS
 
 #test -b $MOUNT_DEV  || MOUNT_DEV=/dev/sdb
 test -b $MOUNT_DEV  || MOUNT_DEV=/dev/nvme0n1

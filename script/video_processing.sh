@@ -3,16 +3,14 @@
 DEBUG=true
 
 ################ Test Techniques ################ 
-Production_RAY=false
-OFFLINE=false
-DFS=false
+Production_RAY=true
 DFS_EVICT=false
 DFS_BACKPRESSURE=false
 DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
 DFS_BACKPRESSURE_BLOCKSPILL=false
 DFS_EAGERSPILL=false
-COMPLETE_BOA=true
+COMPLETE_BOA=false
 MULTI_NODE=true
 n=$(python multinode/get_node_count.py 2>&1)
 NUM_NODES=$(($n + 0))
@@ -88,11 +86,6 @@ then
 	#./../script/install/install_boa.sh
 	rm -rf /tmp/ray
 	Test false false false false false DFS
-fi
-
-if $OFFLINE;
-then
-	Test false false false false true OFFLINE
 fi
 
 if $DFS_EVICT;

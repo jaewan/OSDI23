@@ -56,6 +56,9 @@ def pipeline():
     for _ in range(WORKING_SET_RATIO*num_fill_object_store):
         refs[0].append(producer.remote())
 
+    time.sleep(10)
+    print("Slept 10sec, submitting consumers")
+
     for stage in range(1, NUM_STAGES):
         for i in range(WORKING_SET_RATIO*num_fill_object_store):
             refs[stage].append(consumer.remote(refs[stage-1][i]))
@@ -71,6 +74,7 @@ def pipeline():
 
     ray.get(res[-1])
 
+    del res
     ray_pipeline_end = perf_counter()
 
 

@@ -51,12 +51,7 @@ def warmup(OBJECT_STORE_SIZE):
     del res
     time.sleep(1)
 
-def get_num_spilled_objs():
-    import sys
-    sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/script/multinode/')
-    # This function shutsdown remote ray instance
-    from gather_migration_count import get_migration_count_from_remote
-
+def get_num_spilled_objs(is_multi_node):
     os.system('ray memory --stats-only > /tmp/ray/spilllog')
     migration_count = 0
     num = 0
@@ -73,9 +68,14 @@ def get_num_spilled_objs():
                 idx = line.index('Spilled')
                 num += int(line[idx+3])
                 size += int(line[idx+1])
-    num_workers, remote_migration_count = get_migration_count_from_remote()
-    migration_count += remote_migration_count
-    migration_count/=(num_workers + 1)
+    if is_multi_node:
+        import sys
+        sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/script/multinode/')
+        # This function shutsdown remote ray instance
+        from gather_migration_count import get_migration_count_from_remote
+        num_workers, remote_migration_count = get_migration_count_from_remote()
+        migration_count += remote_migration_count
+        migration_count/=(num_workers + 1)
     return num,size,migration_count
 
 def run_test(benchmark):
@@ -112,7 +112,7 @@ def run_test(benchmark):
             warmup(OBJECT_STORE_SIZE)
 
         ray_time.append(benchmark())
-        num,size,migration_count = get_num_spilled_objs()
+        num,size,migration_count = get_num_spilled_objs(MULTI_NODE)
         num_spilled_objs += num
         spilled_size += size
         migration_counts += migration_count

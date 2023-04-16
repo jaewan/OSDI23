@@ -1,19 +1,19 @@
 #! /bin/bash
 
-DEBUG=false
+DEBUG=true
 
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
 DFS=true
 DFS_EVICT=false
-DFS_BACKPRESSURE=true
-DFS_BLOCKSPILL=true
+DFS_BACKPRESSURE=false
+DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=true
-DFS_EAGERSPILL=true
-COMPLETE_BOA=true
-MULTI_NODE=true
+DFS_BACKPRESSURE_BLOCKSPILL=false
+DFS_EAGERSPILL=false
+COMPLETE_BOA=false
+MULTI_NODE=false
 
 ################ System Variables ################ 
 APPLICATION=pipeline
@@ -23,9 +23,9 @@ then
 	LOG_DIR=~/OSDI23/data/$APPLICATION/
 fi
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=32000000000
-OBJECT_SIZE=400000000
-NUM_CPUS=16
+OBJECT_STORE_SIZE=4000000000
+OBJECT_SIZE=100000000
+NUM_CPUS=20
 
 mkdir -p $LOG_DIR
 
@@ -37,7 +37,7 @@ function Test()
 	EAGERSPILL=$4
 	OFF=$5
 	RESULT_FILE=$LOG_DIR$6.csv
-	NUM_TRIAL=5
+	NUM_TRIAL=10
 
 	export RAY_worker_lease_timeout_milliseconds=0
 	export RAY_worker_cap_enabled=false 
@@ -58,8 +58,9 @@ function Test()
 		test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
 	fi
-	for w in {1,2,4,8}
-	do
+	#for w in {1,2,4,8}
+	#do
+	w=4
 	echo $APPLICATION $w
 		if $MULTI_NODE;
 		then
@@ -68,14 +69,14 @@ function Test()
 				python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
 				ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
 					~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE 
-				python multinode/wake_worker_node.py -s true
+				#python multinode/wake_worker_node.py -s true
 				ray stop
 			done
 		else
 			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw $NUM_CPUS -m $MULTI_NODE
 		fi
-		rm -rf /tmp/ray/*
-	done
+		#rm -rf /tmp/ray/*
+	#done
 }
 
 if $Production_RAY;

@@ -74,8 +74,8 @@ class RandomIntRowDatasource(Datasource[ArrowRow]):
 
         return read_tasks
 
-def store_results(memory_stats, res_str, result_path):
-    num,size,migration_count = get_num_spilled_objs()
+def store_results(memory_stats, res_str, result_path, is_multi_node):
+    num,size,migration_count = get_num_spilled_objs(is_multi_node)
     print("Spilled Amount:", size)
     print("Migration Count:", migration_count)
     if 'dummy' in result_path:
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
 
     print(ds.stats())
-    store_results(memory_stats, ds.stats(), result_path)
+    store_results(memory_stats, ds.stats(), result_path,args.MULTI_NODE)
 
     if "TEST_OUTPUT_JSON" in os.environ:
         out_file = open(os.environ["TEST_OUTPUT_JSON"], "w")
