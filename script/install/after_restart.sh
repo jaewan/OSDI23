@@ -8,10 +8,10 @@ cd ray_memory_management
 # if this server has less memory than (core count * 2)GB, uncomment the following line
 #echo "build --local_ram_resources=HOST_RAM --local_cpu_resources=HOST_CPUS-16" | tee -a .bazelrc
 git checkout eager-spill
-#cd python
-#pip install -e . 
-#cd ray/dashboard/client
-#npm install && npm ci && npm run build
+cd python
+pip install -e . 
+cd ray/dashboard/client
+npm install && npm ci && npm run build
 popd
 
 # Get production Ray 2.2.0
@@ -23,8 +23,8 @@ cd production_ray
 #echo "build --local_ram_resources=HOST_RAM*.5 --local_cpu_resources=HOST_CPUS-2" | tee -a .bazelrc
 git checkout releases/2.2.0
 cp ~/OSDI23/script/install/object_manager.cc src/ray/object_manager/object_manager.cc
-cd python
-pip install -e . 
-cd ray/dashboard/client
-npm install && npm ci && npm run build
+#cd python
+#pip install -e . 
+#cd ray/dashboard/client
+#npm install && npm ci && npm run build
 popd
