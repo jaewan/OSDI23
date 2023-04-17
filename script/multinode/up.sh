@@ -2,7 +2,7 @@
 
 ################ System Variables ################ 
 PORT=6379
-HEAD_ADDR=35.224.100.174
+HEAD_ADDR=34.67.101.240
 NUM_CPUS=16
 OBJECT_STORE_MEMORY_SIZE=2000000000
 HEAD=false
