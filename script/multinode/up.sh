@@ -26,7 +26,7 @@ function Start_Ray()
 		RAY_UP_COMMAND="ray start --head --port=$PORT --system-config={"
 		RAY_UP_COMMAND+='"object_spilling_config":"{\"type\":\"filesystem\",\"params\":{\"directory_path\":\"/ray_spill\"}}"}'
 	fi
-	export RAY_BACKEND_LOG_LEVEL=debug
+	#export RAY_BACKEND_LOG_LEVEL=debug
 	$RAY_UP_COMMAND --num-cpus $NUM_CPUS --object-store-memory $OBJECT_STORE_MEMORY_SIZE
 
 }
