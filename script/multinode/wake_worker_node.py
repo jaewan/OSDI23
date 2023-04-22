@@ -2,6 +2,7 @@ import socket
 import pickle
 import argparse
 import os
+import time
 import node_info
 
 PORT = node_info.PORT
@@ -47,7 +48,16 @@ data = pickle.dumps({"num_cpus":num_cpus, "stop":stop, "shutdown":shutdown,
 clients = []
 for addr in Worker_Addresses:
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((addr, PORT))
+
+    connection_made = False
+    while not connection_made:
+        try:
+            client.connect((addr, PORT))
+            connection_made = True
+        except socket.error as msg:
+            print(addr,PORT)
+            print(msg)
+            time.sleep(3)
     client.send(data)
     clients.append(client)
 

@@ -45,7 +45,7 @@ while True:
   while True:
     data = conn.recv(4096)
     if not data: break
-    data_dict = pickle.loads(data)
+    data_dict = pickle.load(data)
     print (data_dict)
     return_str = socket.gethostname()
     if data_dict['shutdown']:
