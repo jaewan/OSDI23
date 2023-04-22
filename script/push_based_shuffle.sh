@@ -1,9 +1,9 @@
 #! /bin/bash
 
-DEBUG=true
+DEBUG=false
 
 ################ Application Config ################ 
-APP_SCHEDULING=2
+APP_SCHEDULING=0
 PRODUCTION_DIR=~/production_ray/python/ray/
 BOA_DIR=~/ray_memory_management/python/ray
 BASE_DIR=~/OSDI23/macrobench/
@@ -12,23 +12,25 @@ BASE_DIR=~/OSDI23/macrobench/
 APPLICATION=sort
 LOG_DIR=~/OSDI23/data/$APPLICATION/
 TEST_FILE=$BASE_DIR$APPLICATION.py
-OBJECT_STORE_SIZE=30000000000
-NUM_CPUS=30
-NUM_PARTITION=128
+OBJECT_STORE_SIZE=128000000000
+NUM_CPUS=128
+NUM_PARTITION=512
 PARTITION_SIZE=1e8
+n=$(python multinode/get_node_count.py 2>&1)
+NUM_NODES=$(($n + 0))
 
 mkdir -p $LOG_DIR
 
 ################ Test Techniques ################ 
-Production_RAY=true
-DFS=false
+Production_RAY=false
+DFS=true
 DFS_EVICT=false
-DFS_BACKPRESSURE=false
-DFS_BLOCKSPILL=false
+DFS_BACKPRESSURE=true
+DFS_BLOCKSPILL=true
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=false
-DFS_EAGERSPILL=false
-COMPLETE_BOA=false
+DFS_BACKPRESSURE_BLOCKSPILL=true
+DFS_EAGERSPILL=true
+COMPLETE_BOA=true
 MULTI_NODE=true
 
 function SetUp()
@@ -96,7 +98,7 @@ function Test()
 		do
 			python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL -a $APP_SCHEDULING
 			ray job submit --working-dir $BASE_DIR \
-				~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $RESULT_PATH $MULTI_NODE $NUM_PARTITION $PARTITION_SIZE
+				~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $RESULT_PATH $MULTI_NODE $NUM_PARTITION $PARTITION_SIZE $NUM_NODES
 			python multinode/wake_worker_node.py -s true
 			ray stop
 		done
