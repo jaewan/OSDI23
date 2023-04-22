@@ -30,10 +30,18 @@ def get_params():
     parser.add_argument('--LATENCY', '-l', type=float, default=0)
     parser.add_argument('--OFFLINE', '-off', type=boolean_string, default=False)
     parser.add_argument('--MULTI_NODE', '-m', type=boolean_string, default=False)
+    parser.add_argument('--NUM_NODES', '-n', type=int, default=1)
     args = parser.parse_args()
     params = vars(args)
 
     return params
+
+def check_nodes_ready(num_nodes):
+    nodes = [node for node in ray.nodes() if node["Alive"]]
+    while len(nodes) < num_nodes:
+        time.sleep(10)
+        print("{} nodes found, waiting for nodes to join".format(len(nodes)))
+        nodes = [node for node in ray.nodes() if node["Alive"]]
 
 def warmup(OBJECT_STORE_SIZE):
     @ray.remote(num_cpus=1)
@@ -86,6 +94,7 @@ def run_test(benchmark):
     NUM_TRIAL = params['NUM_TRIAL']
     NUM_WORKER = params['NUM_WORKER']
     MULTI_NODE = params['MULTI_NODE']
+    NUM_NODES = params['NUM_NODES']
     OBJECT_STORE_BUFFER_SIZE = 50_000_000 #this value is to add some space in ObjS for nprand metadata and ray object metadata
 
     debugging = False
@@ -100,6 +109,7 @@ def run_test(benchmark):
     for i in range(NUM_TRIAL):
         if MULTI_NODE:
             ray.init()
+            check_nodes_ready(NUM_NODES)
         else:
             spill_dir = os.getenv('RAY_SPILL_DIR')
             if spill_dir:

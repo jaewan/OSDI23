@@ -20,6 +20,7 @@ from ray.data.datasource import Datasource, ReadTask
 import sys
 sys.path.insert(0, '/home/'+os.getlogin()+'/OSDI23/microbench/instantSubmission/')
 from common import get_num_spilled_objs
+from common import check_nodes_ready
 
 class RandomIntRowDatasource(Datasource[ArrowRow]):
     """An example datasource that generates rows with random int64 columns.
@@ -145,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument('--NUM_WORKER', '-nw', type=int, default=16)
     parser.add_argument('--OBJECT_STORE_SIZE', '-o', type=int, default=9_000_000_000)
     parser.add_argument('--MULTI_NODE', '-m', type=boolean_string, default=False)
+    parser.add_argument('--NUM_NODES', '-n', type=int, default=1)
 
     args = parser.parse_args()
 
@@ -164,6 +166,7 @@ if __name__ == "__main__":
     spill_dir = os.getenv('RAY_SPILL_DIR')
     if args.MULTI_NODE or not spill_dir:
         ray.init()
+        check_nodes_ready(args.NUM_NODES)
         print("Ray default init")
     else:
         ray.init(_system_config={"object_spilling_config": json.dumps({"type": "filesystem",

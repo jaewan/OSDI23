@@ -1,19 +1,21 @@
 #! /bin/bash
 
-DEBUG=true
+DEBUG=false
 
 ################ Test Techniques ################ 
 Production_RAY=false
 OFFLINE=false
 DFS=true
 DFS_EVICT=false
-DFS_BACKPRESSURE=false
-DFS_BLOCKSPILL=false
+DFS_BACKPRESSURE=true
+DFS_BLOCKSPILL=true
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=false
-DFS_EAGERSPILL=false
-COMPLETE_BOA=false
-MULTI_NODE=false
+DFS_BACKPRESSURE_BLOCKSPILL=true
+DFS_EAGERSPILL=true
+COMPLETE_BOA=true
+MULTI_NODE=true
+n=$(python multinode/get_node_count.py 2>&1)
+NUM_NODES=$(($n + 0))
 
 ################ System Variables ################ 
 APPLICATION=pipeline
@@ -23,9 +25,9 @@ then
 	LOG_DIR=~/OSDI23/data/$APPLICATION/
 fi
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=4000000000
-OBJECT_SIZE=100000000
-NUM_CPUS=20
+OBJECT_STORE_SIZE=128000000000
+OBJECT_SIZE=400000000
+NUM_CPUS=128
 
 mkdir -p $LOG_DIR
 
@@ -58,9 +60,8 @@ function Test()
 		test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
 	fi
-	#for w in {1,2,4,8}
-	#do
-	w=4
+	for w in {1,2,4,8,16,32}
+	do
 	echo $APPLICATION $w
 		if $MULTI_NODE;
 		then
@@ -68,15 +69,15 @@ function Test()
 			do
 				python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
 				ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
-					~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE 
+					~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE $NUM_NODES
 				#python multinode/wake_worker_node.py -s true
 				ray stop
 			done
 		else
 			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw $NUM_CPUS -m $MULTI_NODE
 		fi
-		#rm -rf /tmp/ray/*
-	#done
+		rm -rf /tmp/ray/*
+	done
 }
 
 if $Production_RAY;
