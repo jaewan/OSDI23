@@ -1,5 +1,5 @@
 import socket
-import pickle
+import json
 import argparse
 import os
 import time
@@ -41,10 +41,10 @@ if not stop and not shutdown:
     os.system('~/OSDI23/script/multinode/up.sh -n ' + num_cpus + ' -o ' + object_store_size)
 
 
-data = pickle.dumps({"num_cpus":num_cpus, "stop":stop, "shutdown":shutdown, 
+data = json.dumps({"num_cpus":num_cpus, "stop":stop, "shutdown":shutdown, 
                      "obj_store_size": object_store_size, "BACKPRESSURE":backpressure,
                      "BLOCKSPILL":blockspill, "EAGERSPILL":eagerspill,
-                     "push_based_shuffle_app_scheduling_level":push_based_shuffle_app_scheduling_level})
+                     "push_based_shuffle_app_scheduling_level":push_based_shuffle_app_scheduling_level}).encode('utf-8')
 
 clients = []
 for addr in Worker_Addresses:

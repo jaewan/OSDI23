@@ -1,5 +1,5 @@
 import socket
-import pickle
+import json
 import os
 import shutil
 import node_info
@@ -43,9 +43,16 @@ serv.listen(1)
 while True:
   conn, addr = serv.accept()
   while True:
+    '''
     data = conn.recv(5120)
     if not data: break
     data_dict = pickle.loads(data)
+    '''
+    data = data''
+    while 1:
+        tmp = conn.recv(1024)
+        data += tmp
+    data_dict = json.loads(data.decode('utf-8')
     print (data_dict)
     return_str = socket.gethostname()
     if data_dict['shutdown']:
