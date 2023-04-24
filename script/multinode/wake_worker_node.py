@@ -1,5 +1,6 @@
 import socket
 import pickle
+import struct
 import argparse
 import os
 import time
@@ -59,8 +60,9 @@ for addr in Worker_Addresses:
             print(addr,PORT)
             print(msg)
             time.sleep(3)
+    buf = struct.pack('>I', len(data))
     client.sendall(struct.pack('>I', len(data)))
-    conn.sendall(data)
+    client.sendall(data)
 
     clients.append(client)
 
