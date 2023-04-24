@@ -1,5 +1,6 @@
 import socket
 import pickle
+import struct
 import os
 import shutil
 import node_info
@@ -43,7 +44,10 @@ serv.listen(1)
 while True:
   conn, addr = serv.accept()
   while True:
-    data_size = struct.unpack('>I', conn.recv(4))[0]
+    
+    buf = conn.recv(4)
+    if not buf: break
+    data_size = struct.unpack('>I', buf)[0]
     received_payload = b""
     reamining_payload_size = data_size
     while reamining_payload_size != 0:
