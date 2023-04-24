@@ -16,7 +16,9 @@ def get_migration_count_from_remote():
     for addr in Worker_Addresses:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((addr, PORT))
-        client.send(data)
+        buf = struct.pack('>I', len(data))
+        client.sendall(struct.pack('>I', len(data)))
+        client.sendall(data)
         clients.append(client)
 
     for client in clients:
@@ -25,4 +27,5 @@ def get_migration_count_from_remote():
         client.close()
 
     print("Remote Migration Count", counts)
-    return len(Worker_Addresses), counts
+    return len(Worker_Addresses), counts    
+
