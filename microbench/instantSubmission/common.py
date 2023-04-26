@@ -37,7 +37,9 @@ def get_params():
     return params
 
 def check_nodes_ready(num_nodes):
+    print("Waiting for {} Nodes to join".format(num_nodes))
     nodes = [node for node in ray.nodes() if node["Alive"]]
+    print("{} nodes found".format(len(nodes)))
     while len(nodes) < num_nodes:
         time.sleep(10)
         print("{} nodes found, waiting for nodes to join".format(len(nodes)))
@@ -118,7 +120,7 @@ def run_test(benchmark):
             else:
                 ray.init(num_cpus=NUM_WORKER, object_store_memory=OBJECT_STORE_SIZE+OBJECT_STORE_BUFFER_SIZE )
 
-        if not debugging:
+        if not debugging and not MULTI_NODE:
             warmup(OBJECT_STORE_SIZE)
 
         ray_time.append(benchmark())

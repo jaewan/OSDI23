@@ -1,6 +1,7 @@
 import node_info
 import socket
 import pickle
+import struct
 
 PORT = node_info.PORT
 Worker_Addresses = node_info.Worker_Addresses
