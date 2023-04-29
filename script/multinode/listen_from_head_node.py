@@ -12,6 +12,14 @@ os.environ['RAY_worker_cap_enabled']='False'
 
 PORT = node_info.PORT
 
+def sanitize_data(data_dict):
+    for key in data_dict:
+        if type(data_dict[key]) is bool:
+            if data_dict[key]:
+                data_dict[key] = 'true'
+            else:
+                data_dict[key] = 'false'
+
 def push_based_shuffle_setup(scheduling_level):
     username = os.getlogin()
     PRODUCTION_DIR = '/home/'+username+'/production_ray/python/ray/data/_internal'
@@ -64,9 +72,11 @@ while True:
         quit()
     if data_dict['stop']:
         os.system('ray stop')
+        os.system('rm -rf /ray_spill/*')
         return_str=read_migration_count()
     else:
         #RAY_BACKEND_LOG_LEVEL=debug 
+        sanitize_data(data_dict)
         os.system('RAY_enable_BlockTasks='+ str(data_dict['BACKPRESSURE']) + ' RAY_enable_BlockTasksSpill=' +
                   str(data_dict['BLOCKSPILL']) + ' RAY_enable_Deadlock2=' + str(data_dict['BLOCKSPILL']) +
                   ' RAY_enable_EagerSpill=' + str(data_dict['EAGERSPILL']) +
