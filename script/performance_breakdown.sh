@@ -3,16 +3,16 @@
 DEBUG=false
 
 ################ Test Techniques ################ 
-Production_RAY=false
+Production_RAY=true
 OFFLINE=false
-DFS=true
+DFS=false
 DFS_EVICT=false
-DFS_BACKPRESSURE=true
-DFS_BLOCKSPILL=true
+DFS_BACKPRESSURE=false
+DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
-DFS_BACKPRESSURE_BLOCKSPILL=true
-DFS_EAGERSPILL=true
-COMPLETE_BOA=true
+DFS_BACKPRESSURE_BLOCKSPILL=false
+DFS_EAGERSPILL=false
+COMPLETE_BOA=false
 MULTI_NODE=true
 n=$(python multinode/get_node_count.py 2>&1)
 NUM_NODES=$(($n + 0))
@@ -25,9 +25,9 @@ then
 	LOG_DIR=~/OSDI23/data/$APPLICATION/
 fi
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=128000000000
+OBJECT_STORE_SIZE=64000000000
 OBJECT_SIZE=400000000
-NUM_CPUS=128
+NUM_CPUS=64
 
 mkdir -p $LOG_DIR
 
@@ -56,11 +56,11 @@ function Test()
 		export RAY_BACKEND_LOG_LEVEL=debug
 		RESULT_FILE='~/OSDI/data/dummy.csv'
 	else
-		NUM_TRIAL=5
-		test -f "$RESULT_FILE" && rm $RESULT_FILE
+		NUM_TRIAL=1
+		#test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
 	fi
-	for w in {1,2,4,8,16,32}
+	for w in {4,8,16,32,1,2}
 	do
 	echo $APPLICATION $w
 		if $MULTI_NODE;
