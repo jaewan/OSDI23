@@ -8,7 +8,6 @@ import node_info
 os.environ['RAY_worker_lease_timeout_milliseconds']='0'
 os.environ['RAY_object_spilling_threshold']='1.0'
 os.environ['RAY_block_tasks_threshold']='1.0'
-os.environ['RAY_worker_cap_enabled']='False'
 
 PORT = node_info.PORT
 
