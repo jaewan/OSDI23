@@ -1,9 +1,9 @@
 #! /bin/bash
 
-DEBUG=false
+DEBUG=true
 
 ################ Test Techniques ################ 
-Production_RAY=true
+Production_RAY=false
 OFFLINE=false
 DFS=false
 DFS_EVICT=false
@@ -11,7 +11,7 @@ DFS_BACKPRESSURE=false
 DFS_BLOCKSPILL=false
 DFS_EVICT_BLOCKSPILL=false
 DFS_BACKPRESSURE_BLOCKSPILL=false
-DFS_EAGERSPILL=false
+DFS_EAGERSPILL=true
 COMPLETE_BOA=false
 MULTI_NODE=true
 n=$(python multinode/get_node_count.py 2>&1)
@@ -25,9 +25,9 @@ then
 	LOG_DIR=~/OSDI23/data/$APPLICATION/
 fi
 TEST_FILE=~/OSDI23/microbench/instantSubmission/$APPLICATION.py
-OBJECT_STORE_SIZE=64000000000
-OBJECT_SIZE=400000000
-NUM_CPUS=64
+OBJECT_STORE_SIZE=8000000000
+OBJECT_SIZE=100000000
+NUM_CPUS=32
 
 mkdir -p $LOG_DIR
 
@@ -39,7 +39,7 @@ function Test()
 	EAGERSPILL=$4
 	OFF=$5
 	RESULT_FILE=$LOG_DIR$6.csv
-	NUM_TRIAL=10
+	NUM_TRIAL=5
 
 	export RAY_worker_lease_timeout_milliseconds=0
 	export RAY_worker_cap_enabled=false 
@@ -55,28 +55,32 @@ function Test()
 	then
 		export RAY_BACKEND_LOG_LEVEL=debug
 		RESULT_FILE='~/OSDI/data/dummy.csv'
-	else
 		NUM_TRIAL=1
+	else
 		#test -f "$RESULT_FILE" && rm $RESULT_FILE
 		echo "time,num_spill_objs,spilled_size,migration_count,working_set,object_store_size,object_size,std,var" >>$RESULT_FILE
 	fi
-	for w in {4,8,16,32,1,2}
+	#for w in {2,4,8,16,32}
+	for w in 2
 	do
 	echo $APPLICATION $w
 		if $MULTI_NODE;
 		then
 			for ((n=0;n<$NUM_TRIAL;n++))
 			do
+				echo $TEST_FILE
 				python multinode/wake_worker_node.py -nw $NUM_CPUS -o $OBJECT_STORE_SIZE -b $BACKPRESSURE -bs $BLOCKSPILL -e $EAGERSPILL
-				ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
-					~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE $NUM_NODES
-				#python multinode/wake_worker_node.py -s true
+				python $TEST_FILE -w $w -r $RESULT_FILE --OBJECT_STORE_SIZE $OBJECT_STORE_SIZE --OBJECT_SIZE $OBJECT_SIZE  -off $OFF --MULTI_NODE $MULTI_NODE --NUM_NODES $NUM_NODES
+				#RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir ~/OSDI23/microbench/instantSubmission \
+					#~/OSDI23/script/multinode/submit_job.sh $TEST_FILE  $w $RESULT_FILE $OBJECT_STORE_SIZE $OBJECT_SIZE $OFF $MULTI_NODE $NUM_NODES
+				python multinode/wake_worker_node.py -s true
 				ray stop
+				#rm -rf /tmp/ray/*
 			done
 		else
 			python $TEST_FILE -w $w -r $RESULT_FILE -o $OBJECT_STORE_SIZE -os $OBJECT_SIZE -t $NUM_TRIAL -nw $NUM_CPUS -m $MULTI_NODE
 		fi
-		rm -rf /tmp/ray/*
+		#rm -rf /tmp/ray/*
 	done
 }
 
@@ -89,7 +93,7 @@ fi
 if $DFS;
 then
 	#./../script/install/install_boa.sh
-	rm -rf /tmp/ray
+	#rm -rf /tmp/ray
 	Test false false false false false DFS
 fi
 
