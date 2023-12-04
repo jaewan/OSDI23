@@ -10,7 +10,7 @@ if [[ "$HOSTNAME" == *"head"* ]]; then
 	HEAD=true
 fi
 
-while getopts n:o: flag
+while getopts n:o:a: flag
 do
     case "${flag}" in
         n) NUM_CPUS=${OPTARG};;
