@@ -57,10 +57,10 @@ nvm use 14
 
 #install bazel
 echo "Install Bazel"
-wget https://github.com/bazelbuild/bazel/releases/download/6.3.2/bazel-6.3.2-installer-linux-x86_64.sh
-chmod +x bazel-6.3.2-installer-linux-x86_64.sh
-./bazel-6.3.2-installer-linux-x86_64.sh --user
+wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-installer-linux-x86_64.sh
+chmod +x bazel-5.3.2-installer-linux-x86_64.sh
+./bazel-5.3.2-installer-linux-x86_64.sh --user
 export PATH="$PATH:$HOME/bin"
-rm bazel-6.3.2-installer-linux-x86_64.sh
+rm bazel-5.3.2-installer-linux-x86_64.sh
 
 echo "Restart Terminal and run after_restart.sh"
