@@ -15,6 +15,7 @@ do
     case "${flag}" in
         n) NUM_CPUS=${OPTARG};;
         o) OBJECT_STORE_MEMORY_SIZE=${OPTARG};;
+		a) HEAD_ADDR=${OPTARG};;
     esac
 done
 

@@ -79,7 +79,7 @@ while True:
         os.system('RAY_enable_BlockTasks='+ str(data_dict['BACKPRESSURE']) + ' RAY_enable_BlockTasksSpill=' +
                   str(data_dict['BLOCKSPILL']) + ' RAY_enable_Deadlock2=' + str(data_dict['BLOCKSPILL']) +
                   ' RAY_enable_EagerSpill=' + str(data_dict['EAGERSPILL']) +
-                  ' ./up.sh -n ' + data_dict['num_cpus'] + ' -o ' + data_dict['obj_store_size'])
+                  ' ./up.sh -a ' + addr + ' -n ' + data_dict['num_cpus'] + ' -o ' + data_dict['obj_store_size'])
         push_based_shuffle_setup(data_dict['push_based_shuffle_app_scheduling_level'])
         return_str += " Ray Up"
     conn.send(return_str.encode())
