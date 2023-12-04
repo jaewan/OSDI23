@@ -17,6 +17,7 @@ pip install pyarrow
 pip install pandas
 pip install tqdm
 pip install matplotlib
+pip install "pydantic<2"
 
 pip install ray
 pip uninstall ray
